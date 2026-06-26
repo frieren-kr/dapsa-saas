@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// 사용자
+// ============================================
+enum Role {
+  ADMIN
+  ORGANIZER
+  PARTICIPANT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(PARTICIPANT)
+  createdAt DateTime @default(now())
+
+  // 관계: 이 사용자가 만든 프로젝트들
+  projects       Project[]
+  // 관계: 이 사용자가 참가한 프로젝트들
+  projectMembers ProjectMember[]
+}
+
+// ============================================
+// 프로젝트 (= 답사 한 건)
+// ============================================
+enum ProjectStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      ProjectStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+
+  // 외래키: 만든 사람
+  organizerId String
+  organizer   User   @relation(fields: [organizerId], references: [id])
+
+  // 관계: 이 프로젝트에 속한 것들
+  sites       Site[]
+  schedules   Schedule[]
+  invitations Invitation[]
+  members     ProjectMember[]
+}
+
+// ============================================
+// 답사지
+// ============================================
+model Site {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  latitude    Float
+  longitude   Float
+  address     String?
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  // 외래키: 소속 프로젝트
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // 관계: 이 답사지의 일정들
+  schedules Schedule[]
+}
+
+// ============================================
+// 일정
+// ============================================
+model Schedule {
+  id         String   @id @default(cuid())
+  title      String
+  date       DateTime
+  startTime  String
+  endTime    String
+  orderIndex Int      @default(0)
+
+  // 외래키: 소속 프로젝트 (필수)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // 외래키: 연결된 답사지 (선택)
+  siteId String?
+  site   Site?   @relation(fields: [siteId], references: [id])
+}
+
+// ============================================
+// 초대
+// ============================================
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model Invitation {
+  id        String           @id @default(cuid())
+  email     String
+  token     String           @unique @default(cuid())
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  expiresAt DateTime
+
+  // 외래키: 어떤 프로젝트 초대인지
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 프로젝트 참가자 (다대다 연결 테이블)
+// ============================================
+model ProjectMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // 같은 사용자가 같은 프로젝트에 두 번 참가 방지
+  @@unique([projectId, userId])
+}
