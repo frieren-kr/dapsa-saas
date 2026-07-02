@@ -10,4 +10,14 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
   },
+  user: {
+    additionalFields: {
+      role: {
+        type: ["ORGANIZER", "PARTICIPANT"],
+        required: true,
+        defaultValue: "PARTICIPANT",
+        input: true,
+      },
+    },
+  },
 });
