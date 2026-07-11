@@ -22,3 +22,11 @@ export const createSiteSchema = z.object({
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+export const updateProjectSchema = z.object({
+  projectId: z.string().min(1),
+  title: z.string().min(1, "제목을 입력하세요").max(100),
+  description: z.string().max(1000).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});

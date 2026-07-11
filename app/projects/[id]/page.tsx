@@ -16,11 +16,9 @@ export default async function ProjectPage({
 
   const { id } = await params;
 
-  // 접근 권한 확인
   const hasAccess = await canAccessProject(session.user.id, id);
   if (!hasAccess) notFound();
 
-  // 프로젝트 + 답사지 목록 함께 조회
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
@@ -32,7 +30,6 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  // 편집 권한(추가·수정·삭제)은 organizer만
   const canEdit = await isProjectOrganizer(session.user.id, id);
 
   return (
@@ -58,7 +55,15 @@ export default async function ProjectPage({
             </span>
           </div>
           {project.description && (
-            <p className="text-sm text-gray-700">{project.description}</p>
+            <p className="mb-3 text-sm text-gray-700">{project.description}</p>
+          )}
+          {canEdit && (
+            <Link
+              href={`/projects/${project.id}/edit`}
+              className="rounded border px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              수정
+            </Link>
           )}
         </div>
 
@@ -77,7 +82,6 @@ export default async function ProjectPage({
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
             등록된 답사지 ({project.sites.length})
           </h2>
-
           <SiteList
             sites={project.sites}
             projectId={project.id}

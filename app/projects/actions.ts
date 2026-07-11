@@ -5,6 +5,10 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/session";
 import { createProjectSchema } from "@/lib/validations";
 
+import { revalidatePath } from "next/cache";
+import { isProjectOrganizer } from "@/lib/permissions";
+import { updateProjectSchema } from "@/lib/validations";
+
 export async function createProject(formData: FormData) {
   // 1. 인증 확인
   const session = await requireAuth();
@@ -44,4 +48,59 @@ export async function createProject(formData: FormData) {
 
   // 5. 대시보드로 리다이렉트 (프로젝트 목록은 4-3에서 만들 예정)
   redirect(`/dashboard?created=${project.id}`);
+}
+
+// 기존 createProject 함수는 그대로 둠
+
+export async function updateProject(input: {
+  projectId: string;
+  title: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateProjectSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  // 권한 검사 - 이 프로젝트의 organizer만 수정 가능
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "수정 권한이 없어요" };
+  }
+
+  await prisma.project.update({
+    where: { id: input.projectId },
+    data: {
+      title: input.title,
+      description: input.description || null,
+      startDate: input.startDate ? new Date(input.startDate) : null,
+      endDate: input.endDate ? new Date(input.endDate) : null,
+    },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deleteProject(input: { projectId: string }) {
+  const session = await requireAuth();
+
+  // 권한 검사
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "삭제 권한이 없어요" };
+  }
+
+  // 삭제 - Cascade 설정 때문에 하위 데이터(sites, schedules, invitations, members)도 자동 삭제
+  await prisma.project.delete({
+    where: { id: input.projectId },
+  });
+
+  revalidatePath("/dashboard");
+  return { success: true };
 }
