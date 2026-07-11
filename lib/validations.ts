@@ -13,4 +13,12 @@ export const createProjectSchema = z.object({
   endDate: z.string().optional(),
 });
 
+export const createSiteSchema = z.object({
+  projectId: z.string().min(1),
+  name: z.string().min(1, "답사지 이름을 입력하세요").max(100),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  address: z.string().max(200).optional(),
+});
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
