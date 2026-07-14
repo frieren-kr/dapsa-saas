@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteSite, reorderSite } from "@/app/projects/[id]/actions";
+import Link from "next/link";
 
 interface Site {
   id: string;
@@ -79,7 +80,12 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
               </span>
 
               <div className="flex-1">
-                <h3 className="font-medium text-gray-900">{site.name}</h3>
+                <Link
+                  href={`/projects/${projectId}/sites/${site.id}`}
+                  className="font-medium text-gray-900 hover:underline"
+                >
+                  {site.name}
+                </Link>
                 {site.address && (
                   <p className="text-xs text-gray-500">{site.address}</p>
                 )}

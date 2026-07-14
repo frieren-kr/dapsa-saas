@@ -30,3 +30,10 @@ export const updateProjectSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });
+
+export const updateSiteSchema = z.object({
+  siteId: z.string().min(1),
+  projectId: z.string().min(1),
+  name: z.string().min(1, "이름을 입력하세요").max(100),
+  description: z.string().max(10000, "해설은 10000자 이내로 작성하세요").optional(),
+});

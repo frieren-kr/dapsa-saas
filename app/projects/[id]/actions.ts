@@ -139,3 +139,44 @@ export async function reorderSite(input: {
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };
 }
+
+import { updateSiteSchema } from "@/lib/validations";
+
+export async function updateSite(input: {
+  siteId: string;
+  projectId: string;
+  name: string;
+  description?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateSiteSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "수정 권한이 없어요" };
+  }
+
+  // IDOR 방어 - 이 답사지가 진짜 이 프로젝트 소속인지 확인
+  const site = await prisma.site.findUnique({
+    where: { id: input.siteId },
+  });
+  if (!site || site.projectId !== input.projectId) {
+    return { error: "답사지를 찾을 수 없어요" };
+  }
+
+  await prisma.site.update({
+    where: { id: input.siteId },
+    data: {
+      name: input.name,
+      description: input.description || null,
+    },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  revalidatePath(`/projects/${input.projectId}/sites/${input.siteId}`);
+  return { success: true };
+}
