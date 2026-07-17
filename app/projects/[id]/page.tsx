@@ -97,6 +97,7 @@ export default async function ProjectPage({
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
             등록된 답사지 ({project.sites.length})
           </h2>
+          답사지를 누르면 해설을 작성할 수 있습니다.
           <SiteList
             sites={project.sites}
             projectId={project.id}

@@ -124,7 +124,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-900">
-                해설 (마크다운)
+                해설 (마크다운 형식으로 작성해주세요. ex. **굵게**, *기울임*, [링크](https://...))
               </label>
               <div className="flex gap-1 text-xs">
                 <button
