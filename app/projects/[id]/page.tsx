@@ -5,6 +5,7 @@ import { canAccessProject, isProjectOrganizer } from "@/lib/permissions";
 import SiteRegisterMap from "@/components/SiteRegisterMap";
 import Link from "next/link";
 import SiteList from "@/components/SiteList";
+import ScheduleSection from "@/components/ScheduleSection";
 
 export default async function ProjectPage({
   params,
@@ -25,7 +26,21 @@ export default async function ProjectPage({
       sites: {
         orderBy: { orderIndex: "asc" },
       },
-    },
+      schedules: {
+        orderBy: [
+          { date: "asc" },
+          { orderIndex: "asc" },
+        ],
+        include: {
+          site: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },    
   });
 
   if (!project) notFound();
@@ -88,6 +103,16 @@ export default async function ProjectPage({
             canEdit={canEdit}
           />
         </div>
+
+      </div>
+      {/* 일정 섹션 */}
+      <div className="mt-6">
+        <ScheduleSection
+          projectId={project.id}
+          sites={project.sites.map((s) => ({ id: s.id, name: s.name }))}
+          schedules={project.schedules}
+          canEdit={canEdit}
+        />
       </div>
     </div>
   );
