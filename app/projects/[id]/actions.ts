@@ -240,3 +240,139 @@ export async function createSchedule(input: {
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };
 }
+
+import { updateScheduleSchema } from "@/lib/validations";
+
+export async function updateSchedule(input: {
+  scheduleId: string;
+  projectId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  siteId?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateScheduleSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "수정 권한이 없어요" };
+  }
+
+  if (input.startTime >= input.endTime) {
+    return { error: "종료 시각은 시작 시각보다 늦어야 해요" };
+  }
+
+  // IDOR 방어 - 이 일정이 진짜 이 프로젝트 소속인지
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: input.scheduleId },
+  });
+  if (!schedule || schedule.projectId !== input.projectId) {
+    return { error: "일정을 찾을 수 없어요" };
+  }
+
+  // siteId도 프로젝트 소속 확인
+  if (input.siteId) {
+    const site = await prisma.site.findUnique({
+      where: { id: input.siteId },
+    });
+    if (!site || site.projectId !== input.projectId) {
+      return { error: "연결할 답사지가 이 프로젝트에 없어요" };
+    }
+  }
+
+  // 날짜가 바뀐 경우 orderIndex 처리
+  const oldDate = new Date(schedule.date).toISOString().split("T")[0];
+  const newDate = input.date;
+
+  if (oldDate !== newDate) {
+    // 새 날짜의 마지막 순서로 재배치
+    const countInNewDate = await prisma.schedule.count({
+      where: {
+        projectId: input.projectId,
+        date: new Date(newDate),
+      },
+    });
+
+    // 원래 있던 날짜에서 빈 자리 메우기
+    await prisma.schedule.updateMany({
+      where: {
+        projectId: input.projectId,
+        date: schedule.date,
+        orderIndex: { gt: schedule.orderIndex },
+      },
+      data: {
+        orderIndex: { decrement: 1 },
+      },
+    });
+
+    await prisma.schedule.update({
+      where: { id: input.scheduleId },
+      data: {
+        title: input.title,
+        date: new Date(newDate),
+        startTime: input.startTime,
+        endTime: input.endTime,
+        siteId: input.siteId || null,
+        orderIndex: countInNewDate,
+      },
+    });
+  } else {
+    // 날짜가 그대로면 orderIndex 유지, 나머지만 업데이트
+    await prisma.schedule.update({
+      where: { id: input.scheduleId },
+      data: {
+        title: input.title,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        siteId: input.siteId || null,
+      },
+    });
+  }
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+export async function deleteSchedule(input: {
+  scheduleId: string;
+  projectId: string;
+}) {
+  const session = await requireAuth();
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "삭제 권한이 없어요" };
+  }
+
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: input.scheduleId },
+  });
+  if (!schedule || schedule.projectId !== input.projectId) {
+    return { error: "일정을 찾을 수 없어요" };
+  }
+
+  await prisma.schedule.delete({
+    where: { id: input.scheduleId },
+  });
+
+  // 같은 날짜의 뒤 순서 앞당기기
+  await prisma.schedule.updateMany({
+    where: {
+      projectId: input.projectId,
+      date: schedule.date,
+      orderIndex: { gt: schedule.orderIndex },
+    },
+    data: {
+      orderIndex: { decrement: 1 },
+    },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}

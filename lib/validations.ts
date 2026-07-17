@@ -48,3 +48,13 @@ export const createScheduleSchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
   siteId: z.string().optional(),
 });
+
+export const updateScheduleSchema = z.object({
+  scheduleId: z.string().min(1),
+  projectId: z.string().min(1),
+  title: z.string().min(1, "일정 제목을 입력하세요").max(100),
+  date: z.string().min(1, "날짜를 선택하세요"),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+  siteId: z.string().optional(),
+});
