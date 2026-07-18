@@ -376,3 +376,115 @@ export async function deleteSchedule(input: {
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };
 }
+
+import { createInvitationsSchema } from "@/lib/validations";
+
+export async function createInvitations(input: {
+  projectId: string;
+  emails: string[];
+}) {
+  const session = await requireAuth();
+
+  // 이메일 정규화 (소문자화 + 공백 제거 + 중복 제거)
+  const normalizedEmails = Array.from(
+    new Set(
+      input.emails
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.length > 0)
+    )
+  );
+
+  const parsed = createInvitationsSchema.safeParse({
+    projectId: input.projectId,
+    emails: normalizedEmails,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "초대 권한이 없어요" };
+  }
+
+  // 이미 이 프로젝트에 PENDING 초대가 있는 이메일 필터링 (중복 초대 방지)
+  const existingInvitations = await prisma.invitation.findMany({
+    where: {
+      projectId: input.projectId,
+      email: { in: normalizedEmails },
+      status: "PENDING",
+    },
+    select: { email: true },
+  });
+  const existingEmails = new Set(existingInvitations.map((i) => i.email));
+
+  // 이미 참가한 사용자도 제외
+  const existingMembers = await prisma.projectMember.findMany({
+    where: {
+      projectId: input.projectId,
+      user: { email: { in: normalizedEmails } },
+    },
+    select: { user: { select: { email: true } } },
+  });
+  const memberEmails = new Set(existingMembers.map((m) => m.user.email));
+
+  const toInvite = normalizedEmails.filter(
+    (email) => !existingEmails.has(email) && !memberEmails.has(email)
+  );
+
+  if (toInvite.length === 0) {
+    return { error: "모든 이메일이 이미 초대되었거나 참여 중이에요" };
+  }
+
+  // 14일 후 만료
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 14);
+
+  await prisma.invitation.createMany({
+    data: toInvite.map((email) => ({
+      projectId: input.projectId,
+      email,
+      expiresAt,
+    })),
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+
+  const skipped = normalizedEmails.length - toInvite.length;
+  return {
+    success: true,
+    created: toInvite.length,
+    skipped,
+  };
+}
+
+export async function cancelInvitation(input: {
+  invitationId: string;
+  projectId: string;
+}) {
+  const session = await requireAuth();
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "권한이 없어요" };
+  }
+
+  // IDOR 방어
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: input.invitationId },
+  });
+  if (!invitation || invitation.projectId !== input.projectId) {
+    return { error: "초대를 찾을 수 없어요" };
+  }
+
+  if (invitation.status !== "PENDING") {
+    return { error: "이미 처리된 초대는 취소할 수 없어요" };
+  }
+
+  await prisma.invitation.delete({
+    where: { id: input.invitationId },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}

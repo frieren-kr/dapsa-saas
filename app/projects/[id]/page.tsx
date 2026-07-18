@@ -6,6 +6,7 @@ import SiteRegisterMap from "@/components/SiteRegisterMap";
 import Link from "next/link";
 import SiteList from "@/components/SiteList";
 import ScheduleSection from "@/components/ScheduleSection";
+import InvitationManager from "@/components/InvitationManager";
 
 export default async function ProjectPage({
   params,
@@ -21,27 +22,30 @@ export default async function ProjectPage({
   if (!hasAccess) notFound();
 
   const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      sites: {
-        orderBy: { orderIndex: "asc" },
+  where: { id },
+  include: {
+    sites: {
+      orderBy: { orderIndex: "asc" },
+    },
+    schedules: {
+      orderBy: [{ date: "asc" }, { orderIndex: "asc" }],
+      include: {
+        site: { select: { id: true, name: true } },
       },
-      schedules: {
-        orderBy: [
-          { date: "asc" },
-          { orderIndex: "asc" },
-        ],
-        include: {
-          site: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+    },
+    invitations: {
+      orderBy: { createdAt: "desc" },
+    },
+    members: {
+      orderBy: { joinedAt: "asc" },
+      include: {
+        user: {
+          select: { name: true, email: true },
         },
       },
-    },    
-  });
+    },
+  },
+});
 
   if (!project) notFound();
 
@@ -115,6 +119,17 @@ export default async function ProjectPage({
           canEdit={canEdit}
         />
       </div>
+      {/* 초대 관리 (organizer만) */}
+      {canEdit && (
+        <div className="mt-6">
+          <InvitationManager
+            projectId={project.id}
+            invitations={project.invitations}
+            members={project.members}
+          />
+        </div>
+      )}
     </div>
   );
 }
+

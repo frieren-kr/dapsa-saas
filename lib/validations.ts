@@ -58,3 +58,11 @@ export const updateScheduleSchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
   siteId: z.string().optional(),
 });
+
+export const createInvitationsSchema = z.object({
+  projectId: z.string().min(1),
+  emails: z
+    .array(z.string().email("이메일 형식이 잘못됐어요"))
+    .min(1, "이메일을 한 개 이상 입력하세요")
+    .max(100, "한 번에 최대 100개까지 초대할 수 있어요"),
+});
