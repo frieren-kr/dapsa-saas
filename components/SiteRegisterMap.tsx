@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -7,6 +8,7 @@ import { createSite } from "@/app/projects/[id]/actions";
 declare global {
   interface Window {
     naver: any;
+    navermap_authFailure?: () => void;
   }
 }
 

@@ -101,7 +101,9 @@ export default async function ProjectPage({
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
             등록된 답사지 ({project.sites.length})
           </h2>
-          답사지를 누르면 해설을 작성할 수 있습니다.
+          <p className="mb-3 text-sm text-gray-600">
+            답사지를 클릭하여 해당 답사지의 해설을 작성하거나 수정할 수 있습니다.
+          </p>
           <SiteList
             sites={project.sites}
             projectId={project.id}
@@ -109,27 +111,33 @@ export default async function ProjectPage({
           />
         </div>
 
-      </div>
-      {/* 일정 섹션 */}
-      <div className="mt-6">
-        <ScheduleSection
-          projectId={project.id}
-          sites={project.sites.map((s) => ({ id: s.id, name: s.name }))}
-          schedules={project.schedules}
-          canEdit={canEdit}
-        />
-      </div>
-      {/* 초대 관리 (organizer만) */}
-      {canEdit && (
+      
+        {/* 일정 섹션 */}
         <div className="mt-6">
-          <InvitationManager
+          <ScheduleSection
             projectId={project.id}
-            invitations={project.invitations}
-            members={project.members}
+            sites={project.sites.map((s) => ({ id: s.id, name: s.name }))}
+            schedules={project.schedules}
+            canEdit={canEdit}
           />
         </div>
+        {/* 초대 관리 (organizer만) */}
+        {canEdit && (
+          <div className="mt-6">
+            <InvitationManager
+              projectId={project.id}
+              invitations={project.invitations.map((inv) => ({
+                ...inv,
+                daysLeft: Math.ceil(
+                  (new Date(inv.expiresAt).getTime() - Date.now()) /
+                    (1000 * 60 * 60 * 24)
+                ),
+              }))}
+              members={project.members}
+            />
+          </div>
       )}
+      </div>
     </div>
   );
 }
-

@@ -1,23 +1,191 @@
+import { getSession } from "@/lib/session";
+import prisma from "@/lib/prisma";
+import Link from "next/link";
+import AcceptInvitationButton from "@/components/AcceptInvitationButton";
+
 export default async function InvitePage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const session = await getSession();
 
+  // 초대 정보 조회 (프로젝트 정보 포함)
+  const invitation = await prisma.invitation.findUnique({
+    where: { token },
+    include: {
+      project: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          organizer: {
+            select: { name: true },
+          },
+          _count: {
+            select: { sites: true, members: true },
+          },
+        },
+      },
+    },
+  });
+
+  // 초대 자체가 없거나 취소된 경우
+  if (!invitation) {
+    return (
+      <InvalidInvite message="존재하지 않거나 취소된 초대예요." />
+    );
+  }
+
+  // 만료
+  const isExpired = new Date() > invitation.expiresAt;
+  if (isExpired || invitation.status === "EXPIRED") {
+    return (
+      <InvalidInvite message="만료된 초대예요. 조직자에게 새 초대 링크를 요청하세요." />
+    );
+  }
+
+  // 이미 수락된 초대
+  if (invitation.status === "ACCEPTED") {
+    return (
+      <InvalidInvite
+        message="이미 수락된 초대예요."
+        primaryAction={{
+          label: "대시보드로",
+          href: "/dashboard",
+        }}
+      />
+    );
+  }
+
+  // 상황별 분기
+  const isLoggedIn = !!session;
+  const userEmail = session?.user.email.toLowerCase() || "";
+  const invitedEmail = invitation.email.toLowerCase();
+  const emailMatches = isLoggedIn && userEmail === invitedEmail;
+
+  // 이미 멤버인지 확인 (로그인된 경우만)
+  let alreadyMember = false;
+  if (isLoggedIn) {
+    const member = await prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId: invitation.projectId,
+          userId: session.user.id,
+        },
+      },
+    });
+    alreadyMember = !!member;
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 py-8">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+        <p className="mb-2 text-xs text-gray-500">답사 초대장</p>
+        <h1 className="mb-1 text-2xl font-bold text-gray-900">
+          {invitation.project.title}
+        </h1>
+        <p className="mb-4 text-sm text-gray-600">
+          {invitation.project.organizer.name} 님이 초대했어요
+        </p>
+
+        {invitation.project.description && (
+          <p className="mb-4 text-sm text-gray-700">
+            {invitation.project.description}
+          </p>
+        )}
+
+        <div className="mb-6 grid grid-cols-2 gap-2 text-xs text-gray-600">
+          <div className="rounded bg-gray-50 p-2">
+            답사지 {invitation.project._count.sites}곳
+          </div>
+          <div className="rounded bg-gray-50 p-2">
+            참여자 {invitation.project._count.members}명
+          </div>
+        </div>
+
+        <div className="mb-4 rounded bg-blue-50 p-3 text-xs text-blue-900">
+          이 초대는 <strong>{invitation.email}</strong> 계정으로만
+          수락할 수 있어요.
+        </div>
+
+        {/* 상황별 CTA */}
+        {alreadyMember ? (
+          <div className="space-y-2">
+            <div className="rounded bg-green-50 p-3 text-sm text-green-800">
+              이미 참여 중인 답사예요.
+            </div>
+            <Link
+              href={`/projects/${invitation.projectId}`}
+              className="block rounded bg-black py-2 text-center text-sm text-white"
+            >
+              프로젝트로 이동
+            </Link>
+          </div>
+        ) : !isLoggedIn ? (
+          <div className="space-y-2">
+            <Link
+              href={`/sign-up?invite=${token}&email=${encodeURIComponent(
+                invitation.email
+              )}`}
+              className="block rounded bg-black py-2 text-center text-sm text-white"
+            >
+              회원가입하고 참여
+            </Link>
+            <Link
+              href={`/sign-in?invite=${token}`}
+              className="block rounded border py-2 text-center text-sm text-gray-800"
+            >
+              이미 계정이 있어요
+            </Link>
+          </div>
+        ) : !emailMatches ? (
+          <div className="space-y-2">
+            <div className="rounded bg-yellow-50 p-3 text-sm text-yellow-800">
+              현재 <strong>{session.user.email}</strong> 계정으로 로그인
+              중이에요.
+              <br />
+              초대받은 계정으로 다시 로그인해주세요.
+            </div>
+            <Link
+              href={`/sign-in?invite=${token}`}
+              className="block rounded border py-2 text-center text-sm text-gray-800"
+            >
+              다른 계정으로 로그인
+            </Link>
+          </div>
+        ) : (
+          <AcceptInvitationButton token={token} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 유효하지 않은 초대용 화면
+function InvalidInvite({
+  message,
+  primaryAction,
+}: {
+  message: string;
+  primaryAction?: { label: string; href: string };
+}) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-4 text-xl font-bold text-gray-900">
-          답사 초대장
-        </h1>
-        <p className="mb-2 text-sm text-gray-700">
-          이 페이지는 아직 구현 중이에요. 다음 단계에서 초대 수락 흐름을
-          만들 거예요.
-        </p>
-        <p className="mt-4 rounded bg-gray-100 p-2 text-xs text-gray-500">
-          토큰: {token}
-        </p>
+        <h1 className="mb-4 text-xl font-bold text-gray-900">답사 초대장</h1>
+        <p className="mb-4 text-sm text-gray-700">{message}</p>
+        {primaryAction && (
+          <Link
+            href={primaryAction.href}
+            className="block rounded bg-black py-2 text-center text-sm text-white"
+          >
+            {primaryAction.label}
+          </Link>
+        )}
       </div>
     </div>
   );

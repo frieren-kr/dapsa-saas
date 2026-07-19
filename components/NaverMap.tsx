@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,8 +8,9 @@ import Script from "next/script";
 // 네이버 지도 SDK는 전역 객체 window.naver로 붙기 때문에 필요
 declare global {
   interface Window {
-    
+
     naver: any;
+    navermap_authFailure?: () => void;
   }
 }
 

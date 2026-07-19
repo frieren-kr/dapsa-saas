@@ -1,0 +1,4145 @@
+
+
+===== .gitignore =====
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/app/generated/prisma
+
+
+===== AGENTS.md =====
+
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+
+
+===== app/api/auth/[...all]/route.ts =====
+
+import { auth } from "@/lib/auth";
+import { toNextJsHandler } from "better-auth/next-js";
+
+export const { POST, GET } = toNextJsHandler(auth);
+
+===== app/dashboard/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import Link from "next/link";
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ created?: string }>;
+}) {
+  const session = await getSession();
+  if (!session) {
+    redirect("/sign-in");
+  }
+
+  const params = await searchParams;
+  const justCreated = params.created;
+
+  // 준비기관: 본인이 만든 프로젝트 목록
+  // 참여자: 참가한 프로젝트 목록 (아직 초대 시스템 없어서 비어있을 예정)
+
+  const projects =
+    session.user.role === "ORGANIZER"
+      ? await prisma.project.findMany({
+          where: { organizerId: session.user.id },
+          orderBy: { createdAt: "desc" },
+          include: {
+            _count: {
+              select: { sites: true, members: true },
+            },
+          },
+        })
+      : session.user.role === "PARTICIPANT"
+      ? await prisma.project.findMany({
+          where: {
+            members: { some: { userId: session.user.id } },
+          },
+          orderBy: { startDate: "asc" },
+          include: {
+            _count: {
+              select: { sites: true },
+            },
+          },
+        })
+      : [];
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-4xl px-4">
+        {/* 헤더 */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
+            <p className="text-sm text-gray-600">
+              {session.user.name}님 ·{" "}
+              {session.user.role === "ORGANIZER"
+                ? "답사 준비기관"
+                : "답사 참여자"}
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="text-sm text-gray-600 hover:underline"
+          >
+            메인
+          </Link>
+        </div>
+
+        {/* 방금 생성됨 알림 */}
+        {justCreated && (
+          <div className="mb-4 rounded bg-green-50 p-3 text-sm text-green-800">
+            프로젝트가 생성되었어요.
+          </div>
+        )}
+
+        {/* 준비기관 뷰 */}
+        {session.user.role === "ORGANIZER" && (
+          <>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                내 프로젝트 ({projects.length})
+              </h2>
+              <Link
+                href="/projects/new"
+                className="rounded bg-black px-4 py-2 text-sm text-white"
+              >
+                + 새 프로젝트
+              </Link>
+            </div>
+
+            {projects.length === 0 ? (
+              <div className="rounded-lg bg-white p-8 text-center shadow">
+                <p className="mb-4 text-gray-600">
+                  아직 만든 프로젝트가 없어요.
+                </p>
+                <Link
+                  href="/projects/new"
+                  className="inline-block rounded bg-black px-4 py-2 text-sm text-white"
+                >
+                  첫 프로젝트 만들기
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {projects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    role="ORGANIZER"
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* 참여자 뷰 */}
+        {session.user.role === "PARTICIPANT" && (
+          <>
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              참여 중인 답사 ({projects.length})
+            </h2>
+
+            {projects.length === 0 ? (
+              <div className="rounded-lg bg-white p-8 text-center shadow">
+                <p className="text-gray-600">
+                  아직 초대받은 답사가 없어요.
+                </p>
+                <p className="mt-2 text-sm text-gray-500">
+                  준비기관에서 초대 링크를 받으면 여기에 표시돼요.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {projects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    role="PARTICIPANT"
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 프로젝트 카드 컴포넌트 (같은 파일 안에 둠)
+function ProjectCard({
+  project,
+  role,
+}: {
+  project: {
+    id: string;
+    title: string;
+    description: string | null;
+    startDate: Date | null;
+    endDate: Date | null;
+    status: string;
+    _count: { sites: number; members?: number };
+  };
+  role: "ORGANIZER" | "PARTICIPANT";
+}) {
+  const statusLabel =
+    project.status === "DRAFT"
+      ? "준비 중"
+      : project.status === "PUBLISHED"
+      ? "공개"
+      : "완료";
+
+  const statusColor =
+    project.status === "DRAFT"
+      ? "bg-gray-100 text-gray-700"
+      : project.status === "PUBLISHED"
+      ? "bg-blue-100 text-blue-700"
+      : "bg-green-100 text-green-700";
+
+  return (
+    <Link
+      href={`/projects/${project.id}`}
+      className="block rounded-lg bg-white p-4 shadow hover:shadow-md"
+    >
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <h3 className="font-semibold text-gray-900">{project.title}</h3>
+        <span className={`shrink-0 rounded px-2 py-0.5 text-xs ${statusColor}`}>
+          {statusLabel}
+        </span>
+      </div>
+
+      {project.description && (
+        <p className="mb-3 line-clamp-2 text-sm text-gray-600">
+          {project.description}
+        </p>
+      )}
+
+      <div className="flex gap-3 text-xs text-gray-500">
+        <span>답사지 {project._count.sites}개</span>
+        {role === "ORGANIZER" && project._count.members !== undefined && (
+          <span>참여자 {project._count.members}명</span>
+        )}
+        {project.startDate && (
+          <span>
+            {new Date(project.startDate).toLocaleDateString("ko-KR")}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+===== app/globals.css =====
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+===== app/invite/[token]/actions.ts =====
+
+"use server";
+
+import { revalidatePath } from "next/cache";
+import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/session";
+import { acceptInvitationSchema } from "@/lib/validations";
+
+export async function acceptInvitation(input: { token: string }) {
+  const session = await requireAuth();
+
+  const parsed = acceptInvitationSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  // 초대 조회
+  const invitation = await prisma.invitation.findUnique({
+    where: { token: input.token },
+  });
+
+  if (!invitation) {
+    return { error: "존재하지 않는 초대예요" };
+  }
+
+  // 상태 확인
+  if (invitation.status !== "PENDING") {
+    return { error: "이미 처리된 초대예요" };
+  }
+
+  // 만료 확인
+  if (new Date() > invitation.expiresAt) {
+    // 만료 상태로 업데이트해두면 다음부터 명확
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { status: "EXPIRED" },
+    });
+    return { error: "만료된 초대예요" };
+  }
+
+  // 핵심 방어: 로그인한 사용자의 이메일이 초대 이메일과 일치하는가
+  const userEmail = session.user.email.toLowerCase();
+  if (userEmail !== invitation.email.toLowerCase()) {
+    return {
+      error: `이 초대는 ${invitation.email} 계정을 위한 거예요. 해당 이메일로 로그인해주세요.`,
+    };
+  }
+
+  // 이미 참가 중인지 확인
+  const existing = await prisma.projectMember.findUnique({
+    where: {
+      projectId_userId: {
+        projectId: invitation.projectId,
+        userId: session.user.id,
+      },
+    },
+  });
+
+  if (existing) {
+    // 이미 멤버면 초대 상태만 정리하고 통과
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { status: "ACCEPTED" },
+    });
+    return { success: true, projectId: invitation.projectId };
+  }
+
+  // 참가 처리 (트랜잭션: 초대 상태 변경 + 멤버 추가를 원자적으로)
+  await prisma.$transaction([
+    prisma.projectMember.create({
+      data: {
+        projectId: invitation.projectId,
+        userId: session.user.id,
+      },
+    }),
+    prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { status: "ACCEPTED" },
+    }),
+  ]);
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${invitation.projectId}`);
+
+  return { success: true, projectId: invitation.projectId };
+}
+
+===== app/invite/[token]/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import prisma from "@/lib/prisma";
+import Link from "next/link";
+import AcceptInvitationButton from "@/components/AcceptInvitationButton";
+
+export default async function InvitePage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+  const session = await getSession();
+
+  // 초대 정보 조회 (프로젝트 정보 포함)
+  const invitation = await prisma.invitation.findUnique({
+    where: { token },
+    include: {
+      project: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          organizer: {
+            select: { name: true },
+          },
+          _count: {
+            select: { sites: true, members: true },
+          },
+        },
+      },
+    },
+  });
+
+  // 초대 자체가 없거나 취소된 경우
+  if (!invitation) {
+    return (
+      <InvalidInvite message="존재하지 않거나 취소된 초대예요." />
+    );
+  }
+
+  // 만료
+  const isExpired = new Date() > invitation.expiresAt;
+  if (isExpired || invitation.status === "EXPIRED") {
+    return (
+      <InvalidInvite message="만료된 초대예요. 조직자에게 새 초대 링크를 요청하세요." />
+    );
+  }
+
+  // 이미 수락된 초대
+  if (invitation.status === "ACCEPTED") {
+    return (
+      <InvalidInvite
+        message="이미 수락된 초대예요."
+        primaryAction={{
+          label: "대시보드로",
+          href: "/dashboard",
+        }}
+      />
+    );
+  }
+
+  // 상황별 분기
+  const isLoggedIn = !!session;
+  const userEmail = session?.user.email.toLowerCase() || "";
+  const invitedEmail = invitation.email.toLowerCase();
+  const emailMatches = isLoggedIn && userEmail === invitedEmail;
+
+  // 이미 멤버인지 확인 (로그인된 경우만)
+  let alreadyMember = false;
+  if (isLoggedIn) {
+    const member = await prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId: invitation.projectId,
+          userId: session.user.id,
+        },
+      },
+    });
+    alreadyMember = !!member;
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 py-8">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+        <p className="mb-2 text-xs text-gray-500">답사 초대장</p>
+        <h1 className="mb-1 text-2xl font-bold text-gray-900">
+          {invitation.project.title}
+        </h1>
+        <p className="mb-4 text-sm text-gray-600">
+          {invitation.project.organizer.name} 님이 초대했어요
+        </p>
+
+        {invitation.project.description && (
+          <p className="mb-4 text-sm text-gray-700">
+            {invitation.project.description}
+          </p>
+        )}
+
+        <div className="mb-6 grid grid-cols-2 gap-2 text-xs text-gray-600">
+          <div className="rounded bg-gray-50 p-2">
+            답사지 {invitation.project._count.sites}곳
+          </div>
+          <div className="rounded bg-gray-50 p-2">
+            참여자 {invitation.project._count.members}명
+          </div>
+        </div>
+
+        <div className="mb-4 rounded bg-blue-50 p-3 text-xs text-blue-900">
+          이 초대는 <strong>{invitation.email}</strong> 계정으로만
+          수락할 수 있어요.
+        </div>
+
+        {/* 상황별 CTA */}
+        {alreadyMember ? (
+          <div className="space-y-2">
+            <div className="rounded bg-green-50 p-3 text-sm text-green-800">
+              이미 참여 중인 답사예요.
+            </div>
+            <Link
+              href={`/projects/${invitation.projectId}`}
+              className="block rounded bg-black py-2 text-center text-sm text-white"
+            >
+              프로젝트로 이동
+            </Link>
+          </div>
+        ) : !isLoggedIn ? (
+          <div className="space-y-2">
+            <Link
+              href={`/sign-up?invite=${token}&email=${encodeURIComponent(
+                invitation.email
+              )}`}
+              className="block rounded bg-black py-2 text-center text-sm text-white"
+            >
+              회원가입하고 참여
+            </Link>
+            <Link
+              href={`/sign-in?invite=${token}`}
+              className="block rounded border py-2 text-center text-sm text-gray-800"
+            >
+              이미 계정이 있어요
+            </Link>
+          </div>
+        ) : !emailMatches ? (
+          <div className="space-y-2">
+            <div className="rounded bg-yellow-50 p-3 text-sm text-yellow-800">
+              현재 <strong>{session.user.email}</strong> 계정으로 로그인
+              중이에요.
+              <br />
+              초대받은 계정으로 다시 로그인해주세요.
+            </div>
+            <Link
+              href={`/sign-in?invite=${token}`}
+              className="block rounded border py-2 text-center text-sm text-gray-800"
+            >
+              다른 계정으로 로그인
+            </Link>
+          </div>
+        ) : (
+          <AcceptInvitationButton token={token} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 유효하지 않은 초대용 화면
+function InvalidInvite({
+  message,
+  primaryAction,
+}: {
+  message: string;
+  primaryAction?: { label: string; href: string };
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="max-w-md rounded-lg bg-white p-8 shadow">
+        <h1 className="mb-4 text-xl font-bold text-gray-900">답사 초대장</h1>
+        <p className="mb-4 text-sm text-gray-700">{message}</p>
+        {primaryAction && (
+          <Link
+            href={primaryAction.href}
+            className="block rounded bg-black py-2 text-center text-sm text-white"
+          >
+            {primaryAction.label}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+===== app/layout.tsx =====
+
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "답사 SaaS",
+  description: "답사 준비기관과 참여자를 위한 답사 운영 플랫폼",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="ko"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
+
+===== app/map-test/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import NaverMap from "@/components/NaverMap";
+import Link from "next/link";
+
+export default async function MapTestPage() {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-4xl px-4">
+        <Link
+          href="/dashboard"
+          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
+        >
+          ← 대시보드
+        </Link>
+
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h1 className="mb-4 text-xl font-bold text-gray-900">
+            네이버 지도 SDK 테스트
+          </h1>
+          <p className="mb-4 text-sm text-gray-600">
+            지도가 뜨고 서울시청 위치에 마커가 보이면 SDK 인증 성공입니다.
+            빈 화면이거나 인증 실패 메시지가 뜨면 Client ID 또는 웹 서비스 URL
+            등록을 확인하세요.
+          </p>
+          <NaverMap />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== app/page.tsx =====
+
+﻿"use client";
+
+import { authClient } from "@/lib/auth-client";
+
+export default function Home() {
+  const { data: session, isPending } = authClient.useSession();
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    window.location.href = "/";
+  }
+
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+        <h1 className="mb-6 text-2xl text-black font-bold">답사 SaaS</h1>
+
+        {session ? (
+          <div>
+            <p className="mb-2 text-black">
+              <span className="font-medium">{session.user.name}</span>님, 환영해요
+            </p>
+            <p className="mb-4 text-sm text-gray-600">{session.user.email}</p>
+            <a
+             href="/dashboard"
+              className="mb-2 block w-full rounded bg-black py-2 text-center text-white"
+            >
+              대시보드
+            </a>
+            <button
+              onClick={handleSignOut}
+              className="w-full rounded bg-gray-800 py-2 text-white"
+            >
+              로그아웃
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <a href="/sign-in" className="block rounded bg-black py-2 text-center text-white">
+              로그인
+            </a>
+            <a href="/sign-up" className="block rounded border py-2 text-center">
+              회원가입
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+===== app/projects/[id]/actions.ts =====
+
+"use server";
+
+import { revalidatePath } from "next/cache";
+import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/session";
+import { isProjectOrganizer } from "@/lib/permissions";
+import {
+  createSiteSchema,
+  updateSiteSchema,
+  createScheduleSchema,
+  updateScheduleSchema,
+  createInvitationsSchema,
+} from "@/lib/validations";
+
+export async function createSite(input: {
+  projectId: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+}) {
+  // 1. 인증
+  const session = await requireAuth();
+
+  // 2. Zod 검증
+  const parsed = createSiteSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  // 3. 권한 검사 - 이 프로젝트의 organizer만 답사지 추가 가능
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "이 프로젝트의 답사지를 추가할 권한이 없어요" };
+  }
+
+  // 4. 현재 답사지 개수 확인 (orderIndex 자동 할당용)
+  const count = await prisma.site.count({
+    where: { projectId: input.projectId },
+  });
+
+  // 5. DB에 저장
+  const site = await prisma.site.create({
+    data: {
+      projectId: input.projectId,
+      name: input.name,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      address: input.address || null,
+      orderIndex: count, // 마지막 순서로 추가
+    },
+  });
+
+  // 6. 캐시 무효화 - 프로젝트 페이지 다시 렌더링되게
+  revalidatePath(`/projects/${input.projectId}`);
+
+  return { success: true, siteId: site.id };
+}
+export async function deleteSite(input: { siteId: string; projectId: string }) {
+  const session = await requireAuth();
+
+  // 권한 - organizer만 삭제 가능
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "삭제 권한이 없어요" };
+  }
+
+  // 삭제 대상 답사지가 진짜 이 프로젝트 소속인지 확인 (파라미터 조작 방어)
+  const site = await prisma.site.findUnique({
+    where: { id: input.siteId },
+  });
+  if (!site || site.projectId !== input.projectId) {
+    return { error: "답사지를 찾을 수 없어요" };
+  }
+
+  // 삭제 + 이후 답사지 orderIndex 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
+  await prisma.$transaction([
+    prisma.site.delete({
+      where: { id: input.siteId },
+    }),
+    prisma.site.updateMany({
+      where: {
+        projectId: input.projectId,
+        orderIndex: { gt: site.orderIndex },
+      },
+      data: {
+        orderIndex: { decrement: 1 },
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+
+export async function reorderSite(input: {
+  siteId: string;
+  projectId: string;
+  direction: "up" | "down";
+}) {
+  const session = await requireAuth();
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "권한이 없어요" };
+  }
+
+  // 이동 대상 답사지 조회
+  const current = await prisma.site.findUnique({
+    where: { id: input.siteId },
+  });
+  if (!current || current.projectId !== input.projectId) {
+    return { error: "답사지를 찾을 수 없어요" };
+  }
+
+  // 위로 = orderIndex - 1인 답사지와 자리 바꿈
+  // 아래로 = orderIndex + 1인 답사지와 자리 바꿈
+  const targetIndex =
+    input.direction === "up"
+      ? current.orderIndex - 1
+      : current.orderIndex + 1;
+
+  const neighbor = await prisma.site.findFirst({
+    where: {
+      projectId: input.projectId,
+      orderIndex: targetIndex,
+    },
+  });
+  if (!neighbor) {
+    return { error: "더 이동할 수 없어요" }; // 맨 위/아래
+  }
+
+  // 두 답사지의 orderIndex를 서로 바꿈 (트랜잭션)
+  await prisma.$transaction([
+    prisma.site.update({
+      where: { id: current.id },
+      data: { orderIndex: targetIndex },
+    }),
+    prisma.site.update({
+      where: { id: neighbor.id },
+      data: { orderIndex: current.orderIndex },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+export async function updateSite(input: {
+  siteId: string;
+  projectId: string;
+  name: string;
+  description?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateSiteSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "수정 권한이 없어요" };
+  }
+
+  // IDOR 방어 - 이 답사지가 진짜 이 프로젝트 소속인지 확인
+  const site = await prisma.site.findUnique({
+    where: { id: input.siteId },
+  });
+  if (!site || site.projectId !== input.projectId) {
+    return { error: "답사지를 찾을 수 없어요" };
+  }
+
+  await prisma.site.update({
+    where: { id: input.siteId },
+    data: {
+      name: input.name,
+      description: input.description || null,
+    },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  revalidatePath(`/projects/${input.projectId}/sites/${input.siteId}`);
+  return { success: true };
+}
+export async function createSchedule(input: {
+  projectId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  siteId?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = createScheduleSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "일정 추가 권한이 없어요" };
+  }
+
+  // 시각 논리 검증 - 시작 < 종료
+  if (input.startTime >= input.endTime) {
+    return { error: "종료 시각은 시작 시각보다 늦어야 해요" };
+  }
+
+  // siteId가 있으면 이 프로젝트 소속인지 확인 (IDOR 방어)
+  if (input.siteId) {
+    const site = await prisma.site.findUnique({
+      where: { id: input.siteId },
+    });
+    if (!site || site.projectId !== input.projectId) {
+      return { error: "연결할 답사지가 이 프로젝트에 없어요" };
+    }
+  }
+
+  // orderIndex - 같은 날짜의 마지막 일정 다음 순서
+  const count = await prisma.schedule.count({
+    where: {
+      projectId: input.projectId,
+      date: new Date(input.date),
+    },
+  });
+
+  await prisma.schedule.create({
+    data: {
+      projectId: input.projectId,
+      title: input.title,
+      date: new Date(input.date),
+      startTime: input.startTime,
+      endTime: input.endTime,
+      siteId: input.siteId || null,
+      orderIndex: count,
+    },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+export async function updateSchedule(input: {
+  scheduleId: string;
+  projectId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  siteId?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateScheduleSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "수정 권한이 없어요" };
+  }
+
+  if (input.startTime >= input.endTime) {
+    return { error: "종료 시각은 시작 시각보다 늦어야 해요" };
+  }
+
+  // IDOR 방어 - 이 일정이 진짜 이 프로젝트 소속인지
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: input.scheduleId },
+  });
+  if (!schedule || schedule.projectId !== input.projectId) {
+    return { error: "일정을 찾을 수 없어요" };
+  }
+
+  // siteId도 프로젝트 소속 확인
+  if (input.siteId) {
+    const site = await prisma.site.findUnique({
+      where: { id: input.siteId },
+    });
+    if (!site || site.projectId !== input.projectId) {
+      return { error: "연결할 답사지가 이 프로젝트에 없어요" };
+    }
+  }
+
+  // 날짜가 바뀐 경우 orderIndex 처리
+  const oldDate = new Date(schedule.date).toISOString().split("T")[0];
+  const newDate = input.date;
+
+  if (oldDate !== newDate) {
+    // 새 날짜의 마지막 순서로 재배치
+    const countInNewDate = await prisma.schedule.count({
+      where: {
+        projectId: input.projectId,
+        date: new Date(newDate),
+      },
+    });
+
+    // 원래 날짜의 빈 자리 메우기 + 새 날짜로 이동을 한 트랜잭션으로 묶어 원자성 보장
+    await prisma.$transaction([
+      prisma.schedule.updateMany({
+        where: {
+          projectId: input.projectId,
+          date: schedule.date,
+          orderIndex: { gt: schedule.orderIndex },
+        },
+        data: {
+          orderIndex: { decrement: 1 },
+        },
+      }),
+      prisma.schedule.update({
+        where: { id: input.scheduleId },
+        data: {
+          title: input.title,
+          date: new Date(newDate),
+          startTime: input.startTime,
+          endTime: input.endTime,
+          siteId: input.siteId || null,
+          orderIndex: countInNewDate,
+        },
+      }),
+    ]);
+  } else {
+    // 날짜가 그대로면 orderIndex 유지, 나머지만 업데이트
+    await prisma.schedule.update({
+      where: { id: input.scheduleId },
+      data: {
+        title: input.title,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        siteId: input.siteId || null,
+      },
+    });
+  }
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+export async function deleteSchedule(input: {
+  scheduleId: string;
+  projectId: string;
+}) {
+  const session = await requireAuth();
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "삭제 권한이 없어요" };
+  }
+
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: input.scheduleId },
+  });
+  if (!schedule || schedule.projectId !== input.projectId) {
+    return { error: "일정을 찾을 수 없어요" };
+  }
+
+  // 삭제 + 같은 날짜 뒤 순서 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
+  await prisma.$transaction([
+    prisma.schedule.delete({
+      where: { id: input.scheduleId },
+    }),
+    prisma.schedule.updateMany({
+      where: {
+        projectId: input.projectId,
+        date: schedule.date,
+        orderIndex: { gt: schedule.orderIndex },
+      },
+      data: {
+        orderIndex: { decrement: 1 },
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+export async function createInvitations(input: {
+  projectId: string;
+  emails: string[];
+}) {
+  const session = await requireAuth();
+
+  // 이메일 정규화 (소문자화 + 공백 제거 + 중복 제거)
+  const normalizedEmails = Array.from(
+    new Set(
+      input.emails
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.length > 0)
+    )
+  );
+
+  const parsed = createInvitationsSchema.safeParse({
+    projectId: input.projectId,
+    emails: normalizedEmails,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "초대 권한이 없어요" };
+  }
+
+  // 이미 이 프로젝트에 PENDING 초대가 있는 이메일 필터링 (중복 초대 방지)
+  const existingInvitations = await prisma.invitation.findMany({
+    where: {
+      projectId: input.projectId,
+      email: { in: normalizedEmails },
+      status: "PENDING",
+    },
+    select: { email: true },
+  });
+  const existingEmails = new Set(existingInvitations.map((i) => i.email));
+
+  // 이미 참가한 사용자도 제외
+  const existingMembers = await prisma.projectMember.findMany({
+    where: {
+      projectId: input.projectId,
+      user: { email: { in: normalizedEmails } },
+    },
+    select: { user: { select: { email: true } } },
+  });
+  const memberEmails = new Set(existingMembers.map((m) => m.user.email));
+
+  const toInvite = normalizedEmails.filter(
+    (email) => !existingEmails.has(email) && !memberEmails.has(email)
+  );
+
+  if (toInvite.length === 0) {
+    return { error: "모든 이메일이 이미 초대되었거나 참여 중이에요" };
+  }
+
+  // 14일 후 만료
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 14);
+
+  await prisma.invitation.createMany({
+    data: toInvite.map((email) => ({
+      projectId: input.projectId,
+      email,
+      expiresAt,
+    })),
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+
+  const skipped = normalizedEmails.length - toInvite.length;
+  return {
+    success: true,
+    created: toInvite.length,
+    skipped,
+  };
+}
+
+export async function cancelInvitation(input: {
+  invitationId: string;
+  projectId: string;
+}) {
+  const session = await requireAuth();
+
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "권한이 없어요" };
+  }
+
+  // IDOR 방어
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: input.invitationId },
+  });
+  if (!invitation || invitation.projectId !== input.projectId) {
+    return { error: "초대를 찾을 수 없어요" };
+  }
+
+  if (invitation.status !== "PENDING") {
+    return { error: "이미 처리된 초대는 취소할 수 없어요" };
+  }
+
+  await prisma.invitation.delete({
+    where: { id: input.invitationId },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  return { success: true };
+}
+
+===== app/projects/[id]/edit/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import { redirect, notFound } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { isProjectOrganizer } from "@/lib/permissions";
+import EditProjectForm from "@/components/EditProjectForm";
+import Link from "next/link";
+
+export default async function EditProjectPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const { id } = await params;
+
+  // 편집 권한 확인 - organizer만
+  const canEdit = await isProjectOrganizer(session.user.id, id);
+  if (!canEdit) notFound();
+
+  const project = await prisma.project.findUnique({
+    where: { id },
+  });
+  if (!project) notFound();
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-2xl px-4">
+        <Link
+          href={`/projects/${id}`}
+          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
+        >
+          ← 프로젝트로
+        </Link>
+
+        <div className="rounded-lg bg-white p-8 shadow">
+          <h1 className="mb-6 text-2xl font-bold text-gray-900">
+            프로젝트 수정
+          </h1>
+
+          <EditProjectForm
+            project={{
+              id: project.id,
+              title: project.title,
+              description: project.description,
+              startDate: project.startDate,
+              endDate: project.endDate,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== app/projects/[id]/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import { redirect, notFound } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { canAccessProject, isProjectOrganizer } from "@/lib/permissions";
+import SiteRegisterMap from "@/components/SiteRegisterMap";
+import Link from "next/link";
+import SiteList from "@/components/SiteList";
+import ScheduleSection from "@/components/ScheduleSection";
+import InvitationManager from "@/components/InvitationManager";
+
+export default async function ProjectPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const { id } = await params;
+
+  const hasAccess = await canAccessProject(session.user.id, id);
+  if (!hasAccess) notFound();
+
+  const project = await prisma.project.findUnique({
+  where: { id },
+  include: {
+    sites: {
+      orderBy: { orderIndex: "asc" },
+    },
+    schedules: {
+      orderBy: [{ date: "asc" }, { orderIndex: "asc" }],
+      include: {
+        site: { select: { id: true, name: true } },
+      },
+    },
+    invitations: {
+      orderBy: { createdAt: "desc" },
+    },
+    members: {
+      orderBy: { joinedAt: "asc" },
+      include: {
+        user: {
+          select: { name: true, email: true },
+        },
+      },
+    },
+  },
+});
+
+  if (!project) notFound();
+
+  const canEdit = await isProjectOrganizer(session.user.id, id);
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-5xl px-4">
+        <Link
+          href="/dashboard"
+          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
+        >
+          ← 대시보드
+        </Link>
+
+        {/* 프로젝트 헤더 */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <div className="mb-2 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
+            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+              {project.status === "DRAFT"
+                ? "준비 중"
+                : project.status === "PUBLISHED"
+                ? "공개"
+                : "완료"}
+            </span>
+          </div>
+          {project.description && (
+            <p className="mb-3 text-sm text-gray-700">{project.description}</p>
+          )}
+          {canEdit && (
+            <Link
+              href={`/projects/${project.id}/edit`}
+              className="rounded border px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              수정
+            </Link>
+          )}
+        </div>
+
+        {/* 답사지 등록 UI (organizer만) */}
+        {canEdit && (
+          <div className="mb-6 rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              답사지 추가
+            </h2>
+            <SiteRegisterMap projectId={project.id} />
+          </div>
+        )}
+
+        {/* 등록된 답사지 목록 */}
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            등록된 답사지 ({project.sites.length})
+          </h2>
+          답사지를 누르면 해설을 작성할 수 있습니다.
+          <SiteList
+            sites={project.sites}
+            projectId={project.id}
+            canEdit={canEdit}
+          />
+        </div>
+
+      
+        {/* 일정 섹션 */}
+        <div className="mt-6">
+          <ScheduleSection
+            projectId={project.id}
+            sites={project.sites.map((s) => ({ id: s.id, name: s.name }))}
+            schedules={project.schedules}
+            canEdit={canEdit}
+          />
+        </div>
+        {/* 초대 관리 (organizer만) */}
+        {canEdit && (
+          <div className="mt-6">
+            <InvitationManager
+              projectId={project.id}
+              invitations={project.invitations.map((inv) => ({
+                ...inv,
+                daysLeft: Math.ceil(
+                  (new Date(inv.expiresAt).getTime() - Date.now()) /
+                    (1000 * 60 * 60 * 24)
+                ),
+              }))}
+              members={project.members}
+            />
+          </div>
+      )}
+      </div>
+    </div>
+  );
+}
+
+
+===== app/projects/[id]/sites/[siteId]/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import { redirect, notFound } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { canAccessProject, isProjectOrganizer } from "@/lib/permissions";
+import SiteEditor from "@/components/SiteEditor";
+import Link from "next/link";
+
+export default async function SitePage({
+  params,
+}: {
+  params: Promise<{ id: string; siteId: string }>;
+}) {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const { id: projectId, siteId } = await params;
+
+  // 프로젝트 접근 권한
+  const hasAccess = await canAccessProject(session.user.id, projectId);
+  if (!hasAccess) notFound();
+
+  // 답사지 조회 + 프로젝트 소속 확인 (IDOR 방어)
+  const site = await prisma.site.findUnique({
+    where: { id: siteId },
+    include: {
+      project: {
+        select: { title: true, id: true },
+      },
+    },
+  });
+
+  if (!site || site.projectId !== projectId) notFound();
+
+  // 편집 권한
+  const canEdit = await isProjectOrganizer(session.user.id, projectId);
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-3xl px-4">
+        <Link
+          href={`/projects/${projectId}`}
+          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
+        >
+          ← {site.project.title}
+        </Link>
+
+        <SiteEditor
+          site={{
+            id: site.id,
+            projectId: site.projectId,
+            name: site.name,
+            description: site.description,
+            address: site.address,
+            latitude: site.latitude,
+            longitude: site.longitude,
+          }}
+          canEdit={canEdit}
+        />
+      </div>
+    </div>
+  );
+}
+
+===== app/projects/actions.ts =====
+
+"use server";
+
+import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { requireAuth } from "@/lib/session";
+import { createProjectSchema } from "@/lib/validations";
+
+import { revalidatePath } from "next/cache";
+import { isProjectOrganizer } from "@/lib/permissions";
+import { updateProjectSchema } from "@/lib/validations";
+
+export async function createProject(
+  _prevState: { error?: string } | null,
+  formData: FormData
+) {
+  // 1. 인증 확인
+  const session = await requireAuth();
+
+  // 2. 권한 확인 - ORGANIZER만 생성 가능
+  if (session.user.role !== "ORGANIZER") {
+    return { error: "답사 준비기관만 프로젝트를 만들 수 있어요" };
+  }
+
+  // 3. 입력값 파싱 및 검증
+  const raw = {
+    title: formData.get("title") as string,
+    description: (formData.get("description") as string) || undefined,
+    startDate: (formData.get("startDate") as string) || undefined,
+    endDate: (formData.get("endDate") as string) || undefined,
+  };
+
+  const parsed = createProjectSchema.safeParse(raw);
+  if (!parsed.success) {
+    // 첫 번째 에러 메시지 반환
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { title, description, startDate, endDate } = parsed.data;
+
+  // 4. DB에 저장
+  const project = await prisma.project.create({
+    data: {
+      title,
+      description,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      organizerId: session.user.id,
+      status: "DRAFT",
+    },
+  });
+
+  // 5. 대시보드로 리다이렉트 (프로젝트 목록은 4-3에서 만들 예정)
+  redirect(`/dashboard?created=${project.id}`);
+}
+
+// 기존 createProject 함수는 그대로 둠
+
+export async function updateProject(input: {
+  projectId: string;
+  title: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateProjectSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  // 권한 검사 - 이 프로젝트의 organizer만 수정 가능
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "수정 권한이 없어요" };
+  }
+
+  await prisma.project.update({
+    where: { id: input.projectId },
+    data: {
+      title: input.title,
+      description: input.description || null,
+      startDate: input.startDate ? new Date(input.startDate) : null,
+      endDate: input.endDate ? new Date(input.endDate) : null,
+    },
+  });
+
+  revalidatePath(`/projects/${input.projectId}`);
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deleteProject(input: { projectId: string }) {
+  const session = await requireAuth();
+
+  // 권한 검사
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "삭제 권한이 없어요" };
+  }
+
+  // 삭제 - Cascade 설정 때문에 하위 데이터(sites, schedules, invitations, members)도 자동 삭제
+  await prisma.project.delete({
+    where: { id: input.projectId },
+  });
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+===== app/projects/new/NewProjectForm.tsx =====
+
+"use client";
+
+import { useActionState } from "react";
+import Link from "next/link";
+import { createProject } from "../actions";
+
+export default function NewProjectForm() {
+  const [state, formAction, pending] = useActionState(createProject, null);
+
+  return (
+    <form action={formAction} className="space-y-4">
+      {state?.error && (
+        <div className="rounded bg-red-50 p-3 text-sm text-red-800">
+          {state.error}
+        </div>
+      )}
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-900">
+          프로젝트 제목 <span className="text-red-500">*</span>
+        </label>
+        <input
+          name="title"
+          type="text"
+          required
+          maxLength={100}
+          placeholder="예: 2026 봄 경주 답사"
+          className="w-full rounded border px-3 py-2 text-gray-900"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-900">
+          답사 개요
+        </label>
+        <textarea
+          name="description"
+          rows={4}
+          maxLength={1000}
+          placeholder="답사 목적, 주제 등을 간단히 적어주세요"
+          className="w-full rounded border px-3 py-2 text-gray-900"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-900">
+            시작일
+          </label>
+          <input
+            name="startDate"
+            type="date"
+            className="w-full rounded border px-3 py-2 text-gray-900"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-900">
+            종료일
+          </label>
+          <input
+            name="endDate"
+            type="date"
+            className="w-full rounded border px-3 py-2 text-gray-900"
+          />
+        </div>
+      </div>
+
+      <div className="rounded bg-blue-50 p-3 text-sm text-blue-900">
+        프로젝트를 만든 뒤 답사지·일정·해설을 추가하고 참여자를 초대할 수 있어요.
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Link
+          href="/dashboard"
+          className="rounded border px-4 py-2 text-sm text-gray-700"
+        >
+          취소
+        </Link>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+        >
+          {pending ? "만드는 중..." : "프로젝트 만들기"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+
+===== app/projects/new/page.tsx =====
+
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import NewProjectForm from "./NewProjectForm";
+
+export default async function NewProjectPage() {
+  const session = await getSession();
+
+  // 로그인 안 했으면 로그인 페이지로
+  if (!session) {
+    redirect("/sign-in");
+  }
+
+  // ORGANIZER가 아니면 대시보드로 (참여자는 이 페이지 접근 불가)
+  if (session.user.role !== "ORGANIZER") {
+    redirect("/dashboard");
+  }
+
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-2xl px-4">
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="text-sm text-gray-600 hover:underline"
+          >
+            ← 대시보드로
+          </Link>
+        </div>
+
+        <div className="rounded-lg bg-white p-8 shadow">
+          <h1 className="mb-6 text-2xl font-bold text-gray-900">
+            새 답사 프로젝트
+          </h1>
+
+          <NewProjectForm />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== app/sign-in/page.tsx =====
+
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+
+export default function SignInPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    const { error } = await authClient.signIn.email({
+      email,
+      password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setError(error.message || "로그인에 실패했어요");
+      return;
+    }
+
+    // 초대 흐름이면 초대 페이지로
+    if (inviteToken) {
+      router.push(`/invite/${inviteToken}`);
+    } else {
+      router.push("/");
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+        <h1 className="mb-2 text-2xl text-black font-bold">로그인</h1>
+
+        {inviteToken && (
+          <p className="mb-4 text-sm text-blue-800">
+            로그인 후 초대받은 답사 페이지로 이동해요.
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm text-black font-medium">
+              이메일
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded border px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-black font-medium">
+              비밀번호
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded border px-3 py-2"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
+          >
+            {isLoading ? "로그인 중..." : "로그인"}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-black">
+          처음이신가요?{" "}
+          <a
+            href={
+              inviteToken ? `/sign-up?invite=${inviteToken}` : "/sign-up"
+            }
+            className="text-blue-600 underline"
+          >
+            회원가입
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+===== app/sign-up/page.tsx =====
+
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+
+export default function SignUpPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const inviteToken = searchParams.get("invite");
+  const invitedEmail = searchParams.get("email");
+  const isInviteFlow = !!inviteToken;
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState(invitedEmail || "");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"ORGANIZER" | "PARTICIPANT">(
+    isInviteFlow ? "PARTICIPANT" : "PARTICIPANT"
+  );
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 초대 이메일이 있으면 자동 입력
+  
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    const { error } = await authClient.signUp.email({
+      email,
+      password,
+      name,
+      role,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setError(error.message || "회원가입에 실패했어요");
+      return;
+    }
+
+    // 초대 흐름이면 초대 페이지로, 아니면 메인으로
+    if (inviteToken) {
+      router.push(`/invite/${inviteToken}`);
+    } else {
+      router.push("/");
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">회원가입</h1>
+
+        {isInviteFlow && (
+          <p className="mb-6 text-sm text-blue-800">
+            초대받은 답사에 참여하려면 계정을 만들어주세요.
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 초대 흐름에선 역할 선택 숨김 (자동 참여자) */}
+          {!isInviteFlow && (
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-900">
+                어떻게 서비스를 이용하실 건가요?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRole("PARTICIPANT")}
+                  className={`rounded border p-3 text-sm ${
+                    role === "PARTICIPANT"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700"
+                  }`}
+                >
+                  답사 참여자
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("ORGANIZER")}
+                  className={`rounded border p-3 text-sm ${
+                    role === "ORGANIZER"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700"
+                  }`}
+                >
+                  답사 준비기관
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                {role === "PARTICIPANT"
+                  ? "초대받은 답사의 일정·해설을 보고 참여합니다"
+                  : "답사를 기획하고 참여자를 초대합니다"}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              이름
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full rounded border px-3 py-2 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              이메일
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              readOnly={!!invitedEmail}
+              className="w-full rounded border px-3 py-2 text-gray-900 read-only:bg-gray-100"
+            />
+            {invitedEmail && (
+              <p className="mt-1 text-xs text-gray-500">
+                초대받은 이메일 주소예요.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              비밀번호 (8자 이상)
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full rounded border px-3 py-2 text-gray-900"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
+          >
+            {isLoading ? "처리 중..." : "가입하기"}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-gray-700">
+          이미 계정이 있어요?{" "}
+          <a
+            href={
+              inviteToken ? `/sign-in?invite=${inviteToken}` : "/sign-in"
+            }
+            className="text-blue-600 underline"
+          >
+            로그인
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+===== CLAUDE.md =====
+
+@AGENTS.md
+
+
+===== components/AcceptInvitationButton.tsx =====
+
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { acceptInvitation } from "@/app/invite/[token]/actions";
+
+export default function AcceptInvitationButton({ token }: { token: string }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleAccept() {
+    setError(null);
+    startTransition(async () => {
+      const result = await acceptInvitation({ token });
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      // 참가 성공 → 프로젝트로 이동
+      router.push(`/projects/${result.projectId}`);
+    });
+  }
+
+  return (
+    <div className="space-y-2">
+      {error && (
+        <div className="rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={handleAccept}
+        disabled={isPending}
+        className="w-full rounded bg-black py-2 text-sm text-white disabled:opacity-50"
+      >
+        {isPending ? "참여 중..." : "이 답사에 참여하기"}
+      </button>
+    </div>
+  );
+}
+
+===== components/EditProjectForm.tsx =====
+
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { updateProject, deleteProject } from "@/app/projects/actions";
+
+interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
+// Date → YYYY-MM-DD 문자열 변환 (input type="date" 기본값용)
+function dateToInputValue(date: Date | null): string {
+  if (!date) return "";
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export default function EditProjectForm({ project }: { project: Project }) {
+  const router = useRouter();
+  const [title, setTitle] = useState(project.title);
+  const [description, setDescription] = useState(project.description || "");
+  const [startDate, setStartDate] = useState(dateToInputValue(project.startDate));
+  const [endDate, setEndDate] = useState(dateToInputValue(project.endDate));
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    startTransition(async () => {
+      const result = await updateProject({
+        projectId: project.id,
+        title,
+        description: description || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      router.push(`/projects/${project.id}`);
+    });
+  }
+
+  function handleDelete() {
+    const confirmed = confirm(
+      `"${project.title}" 프로젝트를 삭제할까요?\n답사지·일정·초대 정보도 모두 삭제되고 복구할 수 없어요.`
+    );
+    if (!confirmed) return;
+
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteProject({ projectId: project.id });
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      router.push("/dashboard");
+    });
+  }
+
+  return (
+    <form onSubmit={handleUpdate} className="space-y-4">
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-900">
+          프로젝트 제목 <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          maxLength={100}
+          className="w-full rounded border px-3 py-2 text-gray-900"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-900">
+          답사 개요
+        </label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          maxLength={1000}
+          className="w-full rounded border px-3 py-2 text-gray-900"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-900">
+            시작일
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full rounded border px-3 py-2 text-gray-900"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-900">
+            종료일
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full rounded border px-3 py-2 text-gray-900"
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div className="rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="flex justify-between pt-2">
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isPending}
+          className="rounded border border-red-300 px-4 py-2 text-sm text-red-600 disabled:opacity-50"
+        >
+          프로젝트 삭제
+        </button>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => router.push(`/projects/${project.id}`)}
+            className="rounded border px-4 py-2 text-sm text-gray-700"
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            {isPending ? "저장 중..." : "저장"}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+===== components/InvitationManager.tsx =====
+
+"use client";
+
+import { useState, useTransition } from "react";
+import {
+  createInvitations,
+  cancelInvitation,
+} from "@/app/projects/[id]/actions";
+
+interface Invitation {
+  id: string;
+  email: string;
+  token: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
+  createdAt: Date;
+  expiresAt: Date;
+  daysLeft: number;
+}
+
+interface InvitationManagerProps {
+  projectId: string;
+  invitations: Invitation[];
+  members: Array<{
+    id: string;
+    joinedAt: Date;
+    user: { name: string; email: string };
+  }>;
+}
+
+export default function InvitationManager({
+  projectId,
+  invitations,
+  members,
+}: InvitationManagerProps) {
+  const [emailsText, setEmailsText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  // 링크 도메인 (배포 후엔 vercel URL이 됨)
+  const baseUrl =
+    typeof window !== "undefined" ? window.location.origin : "";
+
+  function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setNotice(null);
+
+    // 개행/쉼표로 분리
+    const emails = emailsText
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (emails.length === 0) {
+      setError("이메일을 입력하세요");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await createInvitations({
+        projectId,
+        emails,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      setEmailsText("");
+      const parts: string[] = [];
+      if (result.created) parts.push(`${result.created}개 초대 생성`);
+      if (result.skipped) parts.push(`${result.skipped}개 건너뜀`);
+      setNotice(parts.join(", "));
+    });
+  }
+
+  function handleCopy(token: string) {
+    const url = `${baseUrl}/invite/${token}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 2000);
+    });
+  }
+
+  function handleCancel(invitationId: string, email: string) {
+    if (!confirm(`${email}에 대한 초대를 취소할까요?`)) return;
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const result = await cancelInvitation({ invitationId, projectId });
+      if (result.error) setError(result.error);
+    });
+  }
+
+  const pendingInvitations = invitations.filter((i) => i.status === "PENDING");
+
+  return (
+    <div className="rounded-lg bg-white p-6 shadow">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        참여자 초대
+      </h2>
+
+      {/* 초대 이메일 입력 폼 */}
+      <form onSubmit={handleInvite} className="mb-6 space-y-2">
+        <label className="block text-sm font-medium text-gray-900">
+          이메일 (쉼표 또는 줄바꿈으로 여러 명)
+        </label>
+        <textarea
+          value={emailsText}
+          onChange={(e) => setEmailsText(e.target.value)}
+          rows={3}
+          placeholder={"student1@example.com \n student2@example.com, student3@example.com"}
+          className="w-full rounded border px-3 py-2 text-sm text-gray-900"
+        />
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500">
+            초대 링크는 14일간 유효합니다.
+          </p>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-50"
+          >
+            {isPending ? "생성 중..." : "초대 링크 만들기"}
+          </button>
+        </div>
+
+        {error && (
+          <div className="rounded bg-red-50 p-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
+        {notice && (
+          <div className="rounded bg-green-50 p-2 text-xs text-green-700">
+            {notice}
+          </div>
+        )}
+      </form>
+
+      {/* 대기 중인 초대 */}
+      <div className="mb-6">
+        <h3 className="mb-2 text-sm font-semibold text-gray-700">
+          발급된 초대 ({pendingInvitations.length})
+        </h3>
+        {pendingInvitations.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            아직 발급된 초대가 없어요.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {pendingInvitations.map((inv) => {
+              const isCopied = copiedToken === inv.token;
+
+              return (
+                <li
+                  key={inv.id}
+                  className="flex items-center gap-2 rounded border p-3"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">{inv.email}</p>
+                    <p className="text-xs text-gray-500">
+                      {inv.daysLeft > 0 ? `${inv.daysLeft}일 남음` : "만료됨"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(inv.token)}
+                    className="rounded border px-2 py-1 text-xs text-gray-700"
+                  >
+                    {isCopied ? "복사됨" : "링크 복사"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCancel(inv.id, inv.email)}
+                    disabled={isPending}
+                    className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
+                  >
+                    취소
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {/* 참가 완료 멤버 */}
+      <div>
+        <h3 className="mb-2 text-sm font-semibold text-gray-700">
+          참가 중인 참여자 ({members.length})
+        </h3>
+        {members.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            아직 참가한 참여자가 없어요.
+          </p>
+        ) : (
+          <ul className="space-y-1">
+            {members.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center gap-2 rounded border border-gray-200 p-2 text-sm"
+              >
+                <span className="font-medium text-gray-900">
+                  {m.user.name}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {m.user.email}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+===== components/NaverMap.tsx =====
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
+
+// TypeScript가 window.naver의 존재를 알도록 알려주는 선언
+// 네이버 지도 SDK는 전역 객체 window.naver로 붙기 때문에 필요
+declare global {
+  interface Window {
+
+    naver: any;
+    navermap_authFailure?: () => void;
+  }
+}
+
+interface NaverMapProps {
+  latitude?: number;
+  longitude?: number;
+  zoom?: number;
+  height?: string;
+}
+
+export default function NaverMap({
+  latitude = 37.5665, // 기본값: 서울시청 좌표
+  longitude = 126.978,
+  zoom = 13,
+  height = "400px",
+}: NaverMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // SDK 로드 완료 후 지도 초기화
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!mapRef.current) return;
+    if (!window.naver) return;
+
+    const map = new window.naver.maps.Map(mapRef.current, {
+      center: new window.naver.maps.LatLng(latitude, longitude),
+      zoom,
+    });
+
+    // 지도 중앙에 테스트 마커
+    new window.naver.maps.Marker({
+      position: new window.naver.maps.LatLng(latitude, longitude),
+      map,
+      title: "중심점",
+    });
+
+    // 인증 실패 시 콜백 등록
+    window.navermap_authFailure = () => {
+      setError(
+        "네이버 지도 인증 실패. Client ID나 등록된 웹 서비스 URL을 확인하세요."
+      );
+    };
+  }, [isLoaded, latitude, longitude, zoom]);
+
+  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+
+  if (!clientId) {
+    return (
+      <div className="rounded bg-red-50 p-4 text-sm text-red-700">
+        NEXT_PUBLIC_NAVER_MAP_CLIENT_ID 환경변수가 설정되지 않았어요.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Script
+        strategy="afterInteractive"
+        src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`}
+        onReady={() => setIsLoaded(true)}
+        onError={() => setError("네이버 지도 SDK 로드 실패")}
+      />
+      {error && (
+        <div className="mb-2 rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+      <div ref={mapRef} style={{ width: "100%", height }} />
+    </>
+  );
+}
+
+===== components/ScheduleSection.tsx =====
+
+"use client";
+
+import { useState, useTransition } from "react";
+import {
+  createSchedule,
+  updateSchedule,
+  deleteSchedule,
+} from "@/app/projects/[id]/actions";
+
+interface Site {
+  id: string;
+  name: string;
+}
+
+interface Schedule {
+  id: string;
+  title: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  orderIndex: number;
+  siteId: string | null;
+  site: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+interface ScheduleSectionProps {
+  projectId: string;
+  sites: Site[];
+  schedules: Schedule[];
+  canEdit: boolean;
+}
+
+// 날짜 → YYYY-MM-DD 문자열
+function dateToInputValue(date: Date): string {
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+export default function ScheduleSection({
+  projectId,
+  sites,
+  schedules,
+  canEdit,
+}: ScheduleSectionProps) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // 날짜별 그룹핑
+  const grouped = groupByDate(schedules);
+  const dateKeys = Object.keys(grouped).sort();
+
+  return (
+    <div className="rounded-lg bg-white p-6 shadow">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">
+          일정 ({schedules.length})
+        </h2>
+        {canEdit && !isAdding && !editingId && (
+          <button
+            type="button"
+            onClick={() => {
+              setIsAdding(true);
+              setError(null);
+            }}
+            className="rounded bg-black px-3 py-1 text-sm text-white"
+          >
+            + 일정 추가
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* 추가 폼 */}
+      {isAdding && canEdit && (
+        <ScheduleForm
+          projectId={projectId}
+          sites={sites}
+          mode="create"
+          onDone={() => setIsAdding(false)}
+          onError={setError}
+          isPending={isPending}
+          startTransition={startTransition}
+        />
+      )}
+
+      {/* 일정 목록 */}
+      {schedules.length === 0 ? (
+        <p className="text-sm text-gray-600">
+          {canEdit
+            ? "일정을 추가하면 여기에 표시돼요."
+            : "아직 등록된 일정이 없어요."}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {dateKeys.map((dateKey) => (
+            <div key={dateKey}>
+              <h3 className="mb-2 text-sm font-semibold text-gray-700">
+                {formatDate(dateKey)}
+              </h3>
+              <ol className="space-y-1">
+                {grouped[dateKey].map((schedule) => {
+                  const isEditingThis = editingId === schedule.id;
+
+                  if (isEditingThis) {
+                    return (
+                      <li key={schedule.id}>
+                        <ScheduleForm
+                          projectId={projectId}
+                          sites={sites}
+                          mode="edit"
+                          initialData={{
+                            scheduleId: schedule.id,
+                            title: schedule.title,
+                            date: dateToInputValue(schedule.date),
+                            startTime: schedule.startTime,
+                            endTime: schedule.endTime,
+                            siteId: schedule.siteId || "",
+                          }}
+                          onDone={() => setEditingId(null)}
+                          onError={setError}
+                          isPending={isPending}
+                          startTransition={startTransition}
+                        />
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li
+                      key={schedule.id}
+                      className="flex items-center gap-3 rounded border border-gray-200 p-3"
+                    >
+                      <div className="w-24 shrink-0 text-xs text-gray-500">
+                        {schedule.startTime} – {schedule.endTime}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {schedule.title}
+                        </p>
+                        {schedule.site && (
+                          <p className="text-xs text-blue-600">
+                            → {schedule.site.name}
+                          </p>
+                        )}
+                      </div>
+                      {canEdit && (
+                        <div className="flex shrink-0 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(schedule.id);
+                              setError(null);
+                            }}
+                            disabled={isPending || isAdding}
+                            className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                !confirm(
+                                  `"${schedule.title}" 일정을 삭제할까요?`
+                                )
+                              )
+                                return;
+                              setError(null);
+                              startTransition(async () => {
+                                const result = await deleteSchedule({
+                                  scheduleId: schedule.id,
+                                  projectId,
+                                });
+                                if (result.error) setError(result.error);
+                              });
+                            }}
+                            disabled={isPending}
+                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 폼 서브 컴포넌트 (create/edit 공용)
+interface ScheduleFormProps {
+  projectId: string;
+  sites: Site[];
+  mode: "create" | "edit";
+  initialData?: {
+    scheduleId: string;
+    title: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    siteId: string;
+  };
+  onDone: () => void;
+  onError: (msg: string | null) => void;
+  isPending: boolean;
+  startTransition: (fn: () => void) => void;
+}
+
+function ScheduleForm({
+  projectId,
+  sites,
+  mode,
+  initialData,
+  onDone,
+  onError,
+  isPending,
+  startTransition,
+}: ScheduleFormProps) {
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [date, setDate] = useState(initialData?.date || "");
+  const [startTime, setStartTime] = useState(initialData?.startTime || "");
+  const [endTime, setEndTime] = useState(initialData?.endTime || "");
+  const [siteId, setSiteId] = useState(initialData?.siteId || "");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    onError(null);
+
+    startTransition(async () => {
+      let result;
+      if (mode === "create") {
+        result = await createSchedule({
+          projectId,
+          title: title.trim(),
+          date,
+          startTime,
+          endTime,
+          siteId: siteId || undefined,
+        });
+      } else {
+        if (!initialData) return;
+        result = await updateSchedule({
+          scheduleId: initialData.scheduleId,
+          projectId,
+          title: title.trim(),
+          date,
+          startTime,
+          endTime,
+          siteId: siteId || undefined,
+        });
+      }
+
+      if (result.error) {
+        onError(result.error);
+        return;
+      }
+
+      onDone();
+    });
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mb-3 space-y-3 rounded border border-gray-300 bg-gray-50 p-4"
+    >
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-900">
+          제목 <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          maxLength={100}
+          placeholder="예: 근정전 답사, 점심 식사, 버스 이동"
+          className="w-full rounded border px-3 py-2 text-sm text-gray-900"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-900">
+            날짜 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+            className="w-full rounded border px-2 py-2 text-sm text-gray-900"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-900">
+            시작 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            required
+            className="w-full rounded border px-2 py-2 text-sm text-gray-900"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-900">
+            종료 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            required
+            className="w-full rounded border px-2 py-2 text-sm text-gray-900"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-900">
+          연결할 답사지 (선택)
+        </label>
+        <select
+          value={siteId}
+          onChange={(e) => setSiteId(e.target.value)}
+          className="w-full rounded border px-3 py-2 text-sm text-gray-900"
+        >
+          <option value="">답사지 없음 (자유 일정)</option>
+          {sites.map((site) => (
+            <option key={site.id} value={site.id}>
+              {site.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={isPending}
+          className="rounded border px-3 py-1 text-sm text-gray-700 disabled:opacity-50"
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-50"
+        >
+          {isPending ? "저장 중..." : "저장"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// 헬퍼
+function groupByDate(schedules: Schedule[]): Record<string, Schedule[]> {
+  const result: Record<string, Schedule[]> = {};
+  for (const s of schedules) {
+    const key = new Date(s.date).toISOString().split("T")[0];
+    if (!result[key]) result[key] = [];
+    result[key].push(s);
+  }
+  return result;
+}
+
+function formatDate(dateKey: string): string {
+  const d = new Date(dateKey);
+  return d.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+}
+
+===== components/SiteEditor.tsx =====
+
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { updateSite } from "@/app/projects/[id]/actions";
+
+interface SiteEditorProps {
+  site: {
+    id: string;
+    projectId: string;
+    name: string;
+    description: string | null;
+    address: string | null;
+    latitude: number;
+    longitude: number;
+  };
+  canEdit: boolean;
+}
+
+export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
+  const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(site.name);
+  const [description, setDescription] = useState(site.description || "");
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSave() {
+    if (!name.trim()) {
+      setError("이름을 입력하세요");
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      const result = await updateSite({
+        siteId: site.id,
+        projectId: site.projectId,
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      setIsEditing(false);
+      router.refresh(); // 서버에서 다시 데이터 가져오게
+    });
+  }
+
+  function handleCancel() {
+    // 원래 값으로 되돌리기
+    setName(site.name);
+    setDescription(site.description || "");
+    setError(null);
+    setIsEditing(false);
+  }
+
+  return (
+    <div className="rounded-lg bg-white p-6 shadow">
+      {/* 위치 정보 - 항상 표시 */}
+      <div className="mb-4 border-b pb-4">
+        {site.address && (
+          <p className="text-sm text-gray-600">{site.address}</p>
+        )}
+        <p className="text-xs text-gray-400">
+          위도 {site.latitude.toFixed(6)} · 경도 {site.longitude.toFixed(6)}
+        </p>
+      </div>
+
+      {/* 조회 모드 */}
+      {!isEditing && (
+        <>
+          <div className="mb-4 flex items-start justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">{site.name}</h1>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="rounded border px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                해설 편집
+              </button>
+            )}
+          </div>
+
+          {site.description ? (
+            <div className="prose prose-sm max-w-none text-gray-900">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {site.description}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              {canEdit
+                ? "아직 해설이 없어요. '해설 편집'을 눌러 작성해보세요."
+                : "아직 해설이 없어요."}
+            </p>
+          )}
+        </>
+      )}
+
+      {/* 편집 모드 */}
+      {isEditing && (
+        <>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              답사지 이름 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              className="w-full rounded border px-3 py-2 text-gray-900"
+            />
+          </div>
+
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-900">
+                해설 (마크다운 형식으로 작성해주세요. ex. **굵게**, *기울임*, [링크](https://...))
+              </label>
+              <div className="flex gap-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("edit")}
+                  className={`rounded px-2 py-1 ${
+                    activeTab === "edit"
+                      ? "bg-gray-900 text-white"
+                      : "border text-gray-700"
+                  }`}
+                >
+                  편집
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("preview")}
+                  className={`rounded px-2 py-1 ${
+                    activeTab === "preview"
+                      ? "bg-gray-900 text-white"
+                      : "border text-gray-700"
+                  }`}
+                >
+                  미리보기
+                </button>
+              </div>
+            </div>
+
+            {activeTab === "edit" ? (
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={16}
+                maxLength={10000}
+                placeholder={`마크다운 문법 예시:
+## 소제목
+**굵게** *기울임* [링크](https://...)
+- 목록 항목
+- 다른 항목
+
+| 연대 | 사건 |
+| --- | --- |
+| 1395 | 경복궁 창건 |`}
+                className="w-full rounded border px-3 py-2 font-mono text-sm text-gray-900"
+              />
+            ) : (
+              <div className="min-h-[400px] rounded border bg-gray-50 p-4">
+                {description ? (
+                  <div className="prose prose-sm max-w-none text-gray-900">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {description}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">
+                    미리볼 내용이 없어요
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className="mt-1 text-xs text-gray-500">
+              {description.length} / 10000
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isPending}
+              className="rounded border px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isPending}
+              className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {isPending ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+===== components/SiteList.tsx =====
+
+"use client";
+
+import { useState, useTransition } from "react";
+import { deleteSite, reorderSite } from "@/app/projects/[id]/actions";
+import Link from "next/link";
+
+interface Site {
+  id: string;
+  name: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  orderIndex: number;
+}
+
+interface SiteListProps {
+  sites: Site[];
+  projectId: string;
+  canEdit: boolean;
+}
+
+export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  function handleDelete(siteId: string, name: string) {
+    if (!confirm(`"${name}" 답사지를 삭제할까요?`)) return;
+
+    setError(null);
+    setPendingId(siteId);
+    startTransition(async () => {
+      const result = await deleteSite({ siteId, projectId });
+      if (result.error) setError(result.error);
+      setPendingId(null);
+    });
+  }
+
+  function handleReorder(siteId: string, direction: "up" | "down") {
+    setError(null);
+    setPendingId(siteId);
+    startTransition(async () => {
+      const result = await reorderSite({ siteId, projectId, direction });
+      if (result.error) setError(result.error);
+      setPendingId(null);
+    });
+  }
+
+  if (sites.length === 0) {
+    return (
+      <p className="text-sm text-gray-600">
+        {canEdit
+          ? "위에서 첫 답사지를 검색해 추가해보세요."
+          : "아직 등록된 답사지가 없어요."}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {error && (
+        <div className="mb-3 rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <ol className="space-y-2">
+        {sites.map((site, index) => {
+          const isFirst = index === 0;
+          const isLast = index === sites.length - 1;
+          const isThisPending = pendingId === site.id && isPending;
+
+          return (
+            <li
+              key={site.id}
+              className="flex items-start gap-3 rounded border p-3"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs text-white">
+                {index + 1}
+              </span>
+
+              <div className="flex-1">
+                <Link
+                  href={`/projects/${projectId}/sites/${site.id}`}
+                  className="font-medium text-gray-900 hover:underline"
+                >
+                  {site.name}
+                </Link>
+                {site.address && (
+                  <p className="text-xs text-gray-500">{site.address}</p>
+                )}
+                <p className="text-xs text-gray-400">
+                  {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
+                </p>
+              </div>
+
+              {canEdit && (
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleReorder(site.id, "up")}
+                    disabled={isFirst || isThisPending}
+                    className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
+                    title="위로"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReorder(site.id, "down")}
+                    disabled={isLast || isThisPending}
+                    className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
+                    title="아래로"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(site.id, site.name)}
+                    disabled={isThisPending}
+                    className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
+                    title="삭제"
+                  >
+                    삭제
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </>
+  );
+}
+
+===== components/SiteRegisterMap.tsx =====
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import Script from "next/script";
+import { createSite } from "@/app/projects/[id]/actions";
+
+declare global {
+  interface Window {
+    naver: any;
+    navermap_authFailure?: () => void;
+  }
+}
+
+interface SiteRegisterMapProps {
+  projectId: string;
+}
+
+interface SearchResult {
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
+
+export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  // SDK 로드 후 지도 초기화
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!mapContainerRef.current) return;
+    if (!window.naver) return;
+
+    // 대한민국 중심 좌표로 시작
+    const map = new window.naver.maps.Map(mapContainerRef.current, {
+      center: new window.naver.maps.LatLng(36.5, 127.8),
+      zoom: 7,
+    });
+    mapRef.current = map;
+
+    // 인증 실패 콜백
+    window.navermap_authFailure = () => {
+      setError("네이버 지도 인증 실패. Client ID나 도메인 등록을 확인하세요.");
+    };
+    // 지도 클릭 리스너 - 좌표 직접 지정용
+    window.naver.maps.Event.addListener(map, "click", (e: any) => {
+        const lat = e.coord.lat();
+        const lng = e.coord.lng();
+
+        const result: SearchResult = {
+            name: "",
+            address: `직접 지정한 위치 (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            latitude: lat,
+            longitude: lng,
+        };
+
+        setSearchResult(result);
+        setSiteName(""); // 사용자가 이름 직접 입력하도록 비움
+
+        // 마커 갱신
+        if (markerRef.current) {
+            markerRef.current.setMap(null);
+        }
+        markerRef.current = new window.naver.maps.Marker({
+            position: e.coord,
+            map,
+        });
+    });
+  }, [isLoaded]);
+
+  // 검색 실행 - 네이버 Geocoding submodule 사용
+  function handleSearch() {
+    if (!window.naver?.maps?.Service) {
+      setError("지도 SDK가 아직 준비 안 됐어요. 잠시만요.");
+      return;
+    }
+    if (!query.trim()) return;
+
+    setError(null);
+
+    window.naver.maps.Service.geocode(
+      { query: query.trim() },
+      (status: any, response: any) => {
+        if (status !== window.naver.maps.Service.Status.OK) {
+          setError("검색에 실패했어요. 다시 시도해주세요.");
+          return;
+        }
+
+        const items = response.v2.addresses;
+        if (!items || items.length === 0) {
+          setError("검색 결과가 없어요. 다른 키워드를 시도해보세요.");
+          return;
+        }
+
+        // 첫 번째 결과 사용
+        const item = items[0];
+        const lat = parseFloat(item.y);
+        const lng = parseFloat(item.x);
+        const displayName = item.roadAddress || item.jibunAddress || query;
+
+        const result: SearchResult = {
+          name: query.trim(), // 검색어를 임시 이름으로
+          address: displayName,
+          latitude: lat,
+          longitude: lng,
+        };
+
+        setSearchResult(result);
+        setSiteName(""); // 답사지 이름 기본값
+
+        // 지도 이동 + 마커 표시
+        const position = new window.naver.maps.LatLng(lat, lng);
+        mapRef.current.setCenter(position);
+        mapRef.current.setZoom(16);
+
+        if (markerRef.current) {
+          markerRef.current.setMap(null); // 기존 마커 제거
+        }
+        markerRef.current = new window.naver.maps.Marker({
+          position,
+          map: mapRef.current,
+        });
+      }
+    );
+  }
+
+  // 저장 실행
+  function handleSave() {
+    if (!searchResult) return;
+    if (!siteName.trim()) {
+      setError("답사지 이름을 입력하세요");
+      return;
+    }
+
+    setError(null);
+
+    startTransition(async () => {
+      const result = await createSite({
+        projectId,
+        name: siteName.trim(),
+        latitude: searchResult.latitude,
+        longitude: searchResult.longitude,
+        address: searchResult.address,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      // 성공 - 폼 초기화
+      setQuery("");
+      setSearchResult(null);
+      setSiteName("");
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
+    });
+  }
+
+  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+
+  return (
+    <>
+      <Script
+        strategy="afterInteractive"
+        src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`}
+        onReady={() => setIsLoaded(true)}
+        onError={() => setError("네이버 지도 SDK 로드 실패")}
+      />
+
+      <div className="space-y-3">
+        {/* 검색창 */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder="주소로 검색 (예: 경복궁 ~> 사직로 161)"
+            className="flex-1 rounded border px-3 py-2 text-gray-900"
+          />
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={!isLoaded}
+            className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            검색
+          </button>
+        </div>
+
+        {error && (
+          <div className="rounded bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* 지도 */}
+        <p className="text-xs text-gray-500">
+            주소로 검색이 어려운 곳은 지도를 직접 클릭해서 좌표를 지정할 수 있어요.
+        </p>
+        <div
+          ref={mapContainerRef}
+          style={{ width: "100%", height: "400px" }}
+          className="rounded border"
+        />
+
+        {/* 검색 결과 표시 + 저장 폼 */}
+        {searchResult && (
+          <div className="rounded border bg-gray-50 p-4">
+            <p className="mb-1 text-xs text-gray-500">
+              위도 {searchResult.latitude.toFixed(6)} · 경도{" "}
+              {searchResult.longitude.toFixed(6)}
+            </p>
+            <p className="mb-3 text-sm text-gray-700">
+              주소: {searchResult.address}
+            </p>
+
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              답사지 이름 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+              maxLength={100}
+              className="mb-3 w-full rounded border px-3 py-2 text-gray-900"
+              placeholder="예: 근정전, 광화문"
+            />
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isPending}
+              className="w-full rounded bg-black py-2 text-sm text-white disabled:opacity-50"
+            >
+              {isPending ? "저장 중..." : "이 위치를 답사지로 등록"}
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+===== eslint.config.mjs =====
+
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+
+
+===== lib/auth.ts =====
+
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import prisma from "./prisma";
+
+export const auth = betterAuth({
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+  },
+  user: {
+    additionalFields: {
+      role: {
+        type: ["ORGANIZER", "PARTICIPANT"],
+        required: true,
+        defaultValue: "PARTICIPANT",
+        input: true,
+      },
+    },
+  },
+});
+
+===== lib/auth-client.ts =====
+
+import { createAuthClient } from "better-auth/react";
+import { inferAdditionalFields } from "better-auth/client/plugins";
+import type { auth } from "./auth";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  plugins: [inferAdditionalFields<typeof auth>()], 
+});
+
+===== lib/permissions.ts =====
+
+import prisma from "@/lib/prisma";
+
+/**
+ * 이 사용자가 이 프로젝트에 접근 가능한가?
+ * - 만든 사람(organizer)이거나
+ * - 참가자(member)이면 OK
+ */
+export async function canAccessProject(userId: string, projectId: string) {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      OR: [
+        { organizerId: userId },
+        { members: { some: { userId } } },
+      ],
+    },
+  });
+  return project !== null;
+}
+
+/**
+ * 이 사용자가 이 프로젝트의 organizer인가?
+ * 프로젝트 수정/삭제처럼 organizer만 할 수 있는 작업용
+ */
+export async function isProjectOrganizer(userId: string, projectId: string) {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      organizerId: userId,
+    },
+  });
+  return project !== null;
+}
+
+===== lib/prisma.ts =====
+
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+
+export default prisma;
+
+===== lib/session.ts =====
+
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+
+export async function getSession() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  return session;
+}
+
+export async function requireAuth() {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("UNAUTHORIZED");
+  }
+  return session;
+}
+
+===== lib/validations.ts =====
+
+import { z } from "zod";
+
+export const createProjectSchema = z.object({
+  title: z
+    .string()
+    .min(1, "제목을 입력하세요")
+    .max(100, "제목은 100자 이내로 입력하세요"),
+  description: z
+    .string()
+    .max(1000, "설명은 1000자 이내로 입력하세요")
+    .optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export const createSiteSchema = z.object({
+  projectId: z.string().min(1),
+  name: z.string().min(1, "답사지 이름을 입력하세요").max(100),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  address: z.string().max(200).optional(),
+});
+
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+export const updateProjectSchema = z.object({
+  projectId: z.string().min(1),
+  title: z.string().min(1, "제목을 입력하세요").max(100),
+  description: z.string().max(1000).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export const updateSiteSchema = z.object({
+  siteId: z.string().min(1),
+  projectId: z.string().min(1),
+  name: z.string().min(1, "이름을 입력하세요").max(100),
+  description: z.string().max(10000, "해설은 10000자 이내로 작성하세요").optional(),
+});
+
+export const createScheduleSchema = z.object({
+  projectId: z.string().min(1),
+  title: z.string().min(1, "일정 제목을 입력하세요").max(100),
+  date: z.string().min(1, "날짜를 선택하세요"),
+  startTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요 (예: 09:30)"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+  siteId: z.string().optional(),
+});
+
+export const updateScheduleSchema = z.object({
+  scheduleId: z.string().min(1),
+  projectId: z.string().min(1),
+  title: z.string().min(1, "일정 제목을 입력하세요").max(100),
+  date: z.string().min(1, "날짜를 선택하세요"),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+  siteId: z.string().optional(),
+});
+
+export const createInvitationsSchema = z.object({
+  projectId: z.string().min(1),
+  emails: z
+    .array(z.string().email("이메일 형식이 잘못됐어요"))
+    .min(1, "이메일을 한 개 이상 입력하세요")
+    .max(100, "한 번에 최대 100개까지 초대할 수 있어요"),
+});
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(1),
+});
+
+===== next.config.ts =====
+
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+
+
+===== package.json =====
+
+{
+  "name": "dapsa-saas",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "better-auth": "^1.6.22",
+    "next": "16.2.9",
+    "pg": "^8.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.20",
+    "@types/node": "^20",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "prisma": "^7.8.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+
+===== postcss.config.mjs =====
+
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+
+
+===== prisma.config.ts =====
+
+// This file was generated by Prisma, and assumes you have installed the following:
+// npm install --save-dev prisma dotenv
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+  },
+  datasource: {
+    url: process.env["DATABASE_URL"],
+  },
+});
+
+
+===== prisma/schema.prisma =====
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// Better Auth 핵심 테이블들
+// ============================================
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          Role      @default(PARTICIPANT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Better Auth 관계
+  sessions Session[]
+  accounts Account[]
+
+  // 우리 서비스 관계
+  projects       Project[]
+  projectMembers ProjectMember[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ============================================
+// 우리 서비스 테이블들 (기존과 동일)
+// ============================================
+enum Role {
+  ADMIN
+  ORGANIZER
+  PARTICIPANT
+}
+
+enum ProjectStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      ProjectStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+
+  organizerId String
+  organizer   User   @relation(fields: [organizerId], references: [id])
+
+  sites       Site[]
+  schedules   Schedule[]
+  invitations Invitation[]
+  members     ProjectMember[]
+}
+
+model Site {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  latitude    Float
+  longitude   Float
+  address     String?
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  schedules Schedule[]
+}
+
+model Schedule {
+  id         String   @id @default(cuid())
+  title      String
+  date       DateTime
+  startTime  String
+  endTime    String
+  orderIndex Int      @default(0)
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  siteId String?
+  site   Site?   @relation(fields: [siteId], references: [id])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model Invitation {
+  id        String           @id @default(cuid())
+  email     String
+  token     String           @unique @default(cuid())
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  expiresAt DateTime
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ProjectMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+===== proxy.ts =====
+
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
+
+// 로그인 필요한 경로들
+const protectedRoutes = ["/dashboard", "/projects"];
+
+// 로그인 했으면 가면 안 되는 경로들 (이미 로그인한 사람이 로그인 페이지 가는 거 방지)
+const authRoutes = ["/sign-in", "/sign-up"];
+
+export async function proxy(request: NextRequest) {
+  const sessionCookie = getSessionCookie(request);
+  const { pathname } = request.nextUrl;
+
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+
+  // 로그인 안 했는데 보호된 경로 접근 → 로그인 페이지로
+  if (isProtectedRoute && !sessionCookie) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  // 로그인 했는데 로그인/회원가입 페이지 접근 → 메인으로
+  if (isAuthRoute && sessionCookie) {
+    const hasInvite = request.nextUrl.searchParams.has("invite");
+    if (!hasInvite) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+}
+
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
+
+===== README.md =====
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+===== tsconfig.json =====
+
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}

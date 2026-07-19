@@ -13,6 +13,7 @@ interface Invitation {
   status: "PENDING" | "ACCEPTED" | "EXPIRED";
   createdAt: Date;
   expiresAt: Date;
+  daysLeft: number;
 }
 
 interface InvitationManagerProps {
@@ -35,7 +36,6 @@ export default function InvitationManager({
   const [notice, setNotice] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
   // 링크 도메인 (배포 후엔 vercel URL이 됨)
   const baseUrl =
     typeof window !== "undefined" ? window.location.origin : "";
@@ -151,9 +151,6 @@ export default function InvitationManager({
           <ul className="space-y-2">
             {pendingInvitations.map((inv) => {
               const isCopied = copiedToken === inv.token;
-              const daysLeft = Math.ceil(
-                (new Date(inv.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            );
 
               return (
                 <li
@@ -163,7 +160,7 @@ export default function InvitationManager({
                   <div className="flex-1">
                     <p className="text-sm text-gray-900">{inv.email}</p>
                     <p className="text-xs text-gray-500">
-                      {daysLeft > 0 ? `${daysLeft}일 남음` : "만료됨"}
+                      {inv.daysLeft > 0 ? `${inv.daysLeft}일 남음` : "만료됨"}
                     </p>
                   </div>
                   <button

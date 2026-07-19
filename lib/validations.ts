@@ -66,3 +66,7 @@ export const createInvitationsSchema = z.object({
     .min(1, "이메일을 한 개 이상 입력하세요")
     .max(100, "한 번에 최대 100개까지 초대할 수 있어요"),
 });
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(1),
+});

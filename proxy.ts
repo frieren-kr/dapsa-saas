@@ -23,10 +23,11 @@ export async function proxy(request: NextRequest) {
 
   // 로그인 했는데 로그인/회원가입 페이지 접근 → 메인으로
   if (isAuthRoute && sessionCookie) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const hasInvite = request.nextUrl.searchParams.has("invite");
+    if (!hasInvite) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
-
-  return NextResponse.next();
 }
 
 export const config = {

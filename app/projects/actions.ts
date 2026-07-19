@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/session";
 import { createProjectSchema } from "@/lib/validations";
-
 import { revalidatePath } from "next/cache";
 import { isProjectOrganizer } from "@/lib/permissions";
 import { updateProjectSchema } from "@/lib/validations";
@@ -53,7 +52,6 @@ export async function createProject(
   redirect(`/dashboard?created=${project.id}`);
 }
 
-// 기존 createProject 함수는 그대로 둠
 
 export async function updateProject(input: {
   projectId: string;
