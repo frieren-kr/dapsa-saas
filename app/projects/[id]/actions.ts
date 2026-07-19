@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/session";
 import { isProjectOrganizer } from "@/lib/permissions";
-import { createSiteSchema } from "@/lib/validations";
+import {
+  createSiteSchema,
+  updateSiteSchema,
+  createScheduleSchema,
+  updateScheduleSchema,
+  createInvitationsSchema,
+} from "@/lib/validations";
 
 export async function createSite(input: {
   projectId: string;
@@ -67,20 +73,21 @@ export async function deleteSite(input: { siteId: string; projectId: string }) {
     return { error: "답사지를 찾을 수 없어요" };
   }
 
-  await prisma.site.delete({
-    where: { id: input.siteId },
-  });
-
-  // 삭제된 자리 이후 답사지들의 orderIndex 앞당기기
-  await prisma.site.updateMany({
-    where: {
-      projectId: input.projectId,
-      orderIndex: { gt: site.orderIndex },
-    },
-    data: {
-      orderIndex: { decrement: 1 },
-    },
-  });
+  // 삭제 + 이후 답사지 orderIndex 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
+  await prisma.$transaction([
+    prisma.site.delete({
+      where: { id: input.siteId },
+    }),
+    prisma.site.updateMany({
+      where: {
+        projectId: input.projectId,
+        orderIndex: { gt: site.orderIndex },
+      },
+      data: {
+        orderIndex: { decrement: 1 },
+      },
+    }),
+  ]);
 
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };
@@ -140,8 +147,6 @@ export async function reorderSite(input: {
   return { success: true };
 }
 
-import { updateSiteSchema } from "@/lib/validations";
-
 export async function updateSite(input: {
   siteId: string;
   projectId: string;
@@ -180,8 +185,6 @@ export async function updateSite(input: {
   revalidatePath(`/projects/${input.projectId}/sites/${input.siteId}`);
   return { success: true };
 }
-import { createScheduleSchema } from "@/lib/validations";
-
 export async function createSchedule(input: {
   projectId: string;
   title: string;
@@ -241,8 +244,6 @@ export async function createSchedule(input: {
   return { success: true };
 }
 
-import { updateScheduleSchema } from "@/lib/validations";
-
 export async function updateSchedule(input: {
   scheduleId: string;
   projectId: string;
@@ -299,29 +300,30 @@ export async function updateSchedule(input: {
       },
     });
 
-    // 원래 있던 날짜에서 빈 자리 메우기
-    await prisma.schedule.updateMany({
-      where: {
-        projectId: input.projectId,
-        date: schedule.date,
-        orderIndex: { gt: schedule.orderIndex },
-      },
-      data: {
-        orderIndex: { decrement: 1 },
-      },
-    });
-
-    await prisma.schedule.update({
-      where: { id: input.scheduleId },
-      data: {
-        title: input.title,
-        date: new Date(newDate),
-        startTime: input.startTime,
-        endTime: input.endTime,
-        siteId: input.siteId || null,
-        orderIndex: countInNewDate,
-      },
-    });
+    // 원래 날짜의 빈 자리 메우기 + 새 날짜로 이동을 한 트랜잭션으로 묶어 원자성 보장
+    await prisma.$transaction([
+      prisma.schedule.updateMany({
+        where: {
+          projectId: input.projectId,
+          date: schedule.date,
+          orderIndex: { gt: schedule.orderIndex },
+        },
+        data: {
+          orderIndex: { decrement: 1 },
+        },
+      }),
+      prisma.schedule.update({
+        where: { id: input.scheduleId },
+        data: {
+          title: input.title,
+          date: new Date(newDate),
+          startTime: input.startTime,
+          endTime: input.endTime,
+          siteId: input.siteId || null,
+          orderIndex: countInNewDate,
+        },
+      }),
+    ]);
   } else {
     // 날짜가 그대로면 orderIndex 유지, 나머지만 업데이트
     await prisma.schedule.update({
@@ -357,27 +359,26 @@ export async function deleteSchedule(input: {
     return { error: "일정을 찾을 수 없어요" };
   }
 
-  await prisma.schedule.delete({
-    where: { id: input.scheduleId },
-  });
-
-  // 같은 날짜의 뒤 순서 앞당기기
-  await prisma.schedule.updateMany({
-    where: {
-      projectId: input.projectId,
-      date: schedule.date,
-      orderIndex: { gt: schedule.orderIndex },
-    },
-    data: {
-      orderIndex: { decrement: 1 },
-    },
-  });
+  // 삭제 + 같은 날짜 뒤 순서 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
+  await prisma.$transaction([
+    prisma.schedule.delete({
+      where: { id: input.scheduleId },
+    }),
+    prisma.schedule.updateMany({
+      where: {
+        projectId: input.projectId,
+        date: schedule.date,
+        orderIndex: { gt: schedule.orderIndex },
+      },
+      data: {
+        orderIndex: { decrement: 1 },
+      },
+    }),
+  ]);
 
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };
 }
-
-import { createInvitationsSchema } from "@/lib/validations";
 
 export async function createInvitations(input: {
   projectId: string;

@@ -9,13 +9,16 @@ import { revalidatePath } from "next/cache";
 import { isProjectOrganizer } from "@/lib/permissions";
 import { updateProjectSchema } from "@/lib/validations";
 
-export async function createProject(formData: FormData) {
+export async function createProject(
+  _prevState: { error?: string } | null,
+  formData: FormData
+) {
   // 1. 인증 확인
   const session = await requireAuth();
 
   // 2. 권한 확인 - ORGANIZER만 생성 가능
   if (session.user.role !== "ORGANIZER") {
-    throw new Error("답사 준비기관만 프로젝트를 만들 수 있어요");
+    return { error: "답사 준비기관만 프로젝트를 만들 수 있어요" };
   }
 
   // 3. 입력값 파싱 및 검증
@@ -29,7 +32,7 @@ export async function createProject(formData: FormData) {
   const parsed = createProjectSchema.safeParse(raw);
   if (!parsed.success) {
     // 첫 번째 에러 메시지 반환
-    throw new Error(parsed.error.issues[0].message);
+    return { error: parsed.error.issues[0].message };
   }
 
   const { title, description, startDate, endDate } = parsed.data;

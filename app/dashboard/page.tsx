@@ -18,7 +18,6 @@ export default async function DashboardPage({
 
   // 준비기관: 본인이 만든 프로젝트 목록
   // 참여자: 참가한 프로젝트 목록 (아직 초대 시스템 없어서 비어있을 예정)
-  // 관리자: 별도 처리 (하단에서)
 
   const projects =
     session.user.role === "ORGANIZER"
@@ -56,9 +55,7 @@ export default async function DashboardPage({
               {session.user.name}님 ·{" "}
               {session.user.role === "ORGANIZER"
                 ? "답사 준비기관"
-                : session.user.role === "PARTICIPANT"
-                ? "답사 참여자"
-                : "관리자"}
+                : "답사 참여자"}
             </p>
           </div>
           <Link
@@ -73,15 +70,6 @@ export default async function DashboardPage({
         {justCreated && (
           <div className="mb-4 rounded bg-green-50 p-3 text-sm text-green-800">
             프로젝트가 생성되었어요.
-          </div>
-        )}
-
-        {/* 관리자 뷰 */}
-        {session.user.role === "ADMIN" && (
-          <div className="rounded-lg bg-white p-8 shadow">
-            <p className="text-gray-700">
-              관리자 어드민 페이지는 준비 중이에요.
-            </p>
           </div>
         )}
 
