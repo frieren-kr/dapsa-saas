@@ -6,6 +6,7 @@ import {
   updateSchedule,
   deleteSchedule,
 } from "@/app/projects/[id]/actions";
+import Link from "next/link";
 
 interface Site {
   id: string;
@@ -151,9 +152,12 @@ export default function ScheduleSection({
                           {schedule.title}
                         </p>
                         {schedule.site && (
-                          <p className="text-xs text-blue-600">
+                          <Link
+                            href={`/projects/${projectId}/sites/${schedule.site.id}`}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
                             → {schedule.site.name}
-                          </p>
+                          </Link>
                         )}
                       </div>
                       {canEdit && (

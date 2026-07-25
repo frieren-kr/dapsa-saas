@@ -70,6 +70,19 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
           const isLast = index === sites.length - 1;
           const isThisPending = pendingId === site.id && isPending;
 
+          // 답사지 정보 블록 (이름 + 주소 + 좌표)
+          const siteInfo = (
+            <>
+              <h3 className="font-medium text-gray-900">{site.name}</h3>
+              {site.address && (
+                <p className="text-xs text-gray-500">{site.address}</p>
+              )}
+              <p className="text-xs text-gray-400">
+                {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
+              </p>
+            </>
+          );
+
           return (
             <li
               key={site.id}
@@ -79,21 +92,32 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
                 {index + 1}
               </span>
 
-              <div className="flex-1">
+              {/* 조직자: 이름만 링크 / 참여자: 정보 블록 전체 링크 */}
+              {canEdit ? (
+                <div className="flex-1">
+                  <Link
+                    href={`/projects/${projectId}/sites/${site.id}`}
+                    className="font-medium text-gray-900 hover:underline"
+                  >
+                    {site.name}
+                  </Link>
+                  {site.address && (
+                    <p className="text-xs text-gray-500">{site.address}</p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
+                  </p>
+                </div>
+              ) : (
                 <Link
                   href={`/projects/${projectId}/sites/${site.id}`}
-                  className="font-medium text-gray-900 hover:underline"
+                  className="flex-1 rounded hover:bg-gray-50"
                 >
-                  {site.name}
+                  {siteInfo}
                 </Link>
-                {site.address && (
-                  <p className="text-xs text-gray-500">{site.address}</p>
-                )}
-                <p className="text-xs text-gray-400">
-                  {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
-                </p>
-              </div>
+              )}
 
+              {/* 편집 버튼 (조직자만) */}
               {canEdit && (
                 <div className="flex shrink-0 gap-1">
                   <button
