@@ -102,7 +102,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                {projects.map((project) => (
+                {projects.map((project: ProjectCardData) => (
                   <ProjectCard
                     key={project.id}
                     project={project}
@@ -132,7 +132,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                {projects.map((project) => (
+                {projects.map((project: ProjectCardData) => (
                   <ProjectCard
                     key={project.id}
                     project={project}
@@ -147,6 +147,16 @@ export default async function DashboardPage({
     </div>
   );
 }
+
+type ProjectCardData = {
+  id: string;
+  title: string;
+  description: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: string;
+  _count: { sites: number; members?: number };
+};
 
 // 프로젝트 카드 컴포넌트 (같은 파일 안에 둠)
 function ProjectCard({
