@@ -417,7 +417,9 @@ export async function createInvitations(input: {
     },
     select: { email: true },
   });
-  const existingEmails = new Set(existingInvitations.map((i) => i.email));
+  const existingEmails = new Set(
+  existingInvitations.map((i: { email: string }) => i.email)
+  );
 
   // 이미 참가한 사용자도 제외
   const existingMembers = await prisma.projectMember.findMany({
@@ -427,7 +429,7 @@ export async function createInvitations(input: {
     },
     select: { user: { select: { email: true } } },
   });
-  const memberEmails = new Set(existingMembers.map((m) => m.user.email));
+  const memberEmails = new Set(existingMembers.map((m: { user: {email: string}}) => m.user.email));
 
   const toInvite = normalizedEmails.filter(
     (email) => !existingEmails.has(email) && !memberEmails.has(email)
