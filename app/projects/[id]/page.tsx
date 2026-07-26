@@ -142,7 +142,10 @@ export default async function ProjectPage({
         <div className="mb-6">
           <ScheduleSection
             projectId={project.id}
-            sites={project.sites.map((s) => ({ id: s.id, name: s.name }))}
+            sites={project.sites.map((s: { id: string; name: string }) => ({
+              id: s.id,
+              name: s.name,
+            }))}
             schedules={project.schedules}
             canEdit={canEdit}
           />
