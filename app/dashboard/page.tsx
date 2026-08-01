@@ -59,6 +59,12 @@ export default async function DashboardPage({
             </p>
           </div>
           <Link
+            href="/settings"
+            className="text-sm text-gray-600 hover:underline"
+          >
+            설정
+          </Link>
+          <Link
             href="/"
             className="text-sm text-gray-600 hover:underline"
           >

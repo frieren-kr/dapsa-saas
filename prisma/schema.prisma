@@ -93,7 +93,7 @@ model Project {
   createdAt   DateTime      @default(now())
 
   organizerId String
-  organizer   User   @relation(fields: [organizerId], references: [id])
+  organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
 
   sites       Site[]
   schedules   Schedule[]
@@ -158,7 +158,7 @@ model ProjectMember {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
 }
