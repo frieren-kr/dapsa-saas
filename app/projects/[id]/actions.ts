@@ -57,39 +57,43 @@ export async function createSite(input: {
   return { success: true, siteId: site.id };
 }
 export async function deleteSite(input: { siteId: string; projectId: string }) {
+  const t0 = Date.now();
   const session = await requireAuth();
+  console.log("인증:", Date.now() - t0, "ms");
 
-  // 권한 - organizer만 삭제 가능
+  const t1 = Date.now();
   const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  console.log("권한검사:", Date.now() - t1, "ms");
   if (!isOwner) {
     return { error: "삭제 권한이 없어요" };
   }
 
-  // 삭제 대상 답사지가 진짜 이 프로젝트 소속인지 확인 (파라미터 조작 방어)
+  const t2 = Date.now();
   const site = await prisma.site.findUnique({
     where: { id: input.siteId },
   });
+  console.log("답사지 조회:", Date.now() - t2, "ms");
   if (!site || site.projectId !== input.projectId) {
     return { error: "답사지를 찾을 수 없어요" };
   }
 
-  // 삭제 + 이후 답사지 orderIndex 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
+  const t3 = Date.now();
   await prisma.$transaction([
-    prisma.site.delete({
-      where: { id: input.siteId },
-    }),
+    prisma.site.delete({ where: { id: input.siteId } }),
     prisma.site.updateMany({
       where: {
         projectId: input.projectId,
         orderIndex: { gt: site.orderIndex },
       },
-      data: {
-        orderIndex: { decrement: 1 },
-      },
+      data: { orderIndex: { decrement: 1 } },
     }),
   ]);
+  console.log("삭제 트랜잭션:", Date.now() - t3, "ms");
 
+  const t4 = Date.now();
   revalidatePath(`/projects/${input.projectId}`);
+  console.log("revalidate:", Date.now() - t4, "ms");
+
   return { success: true };
 }
 
