@@ -57,27 +57,20 @@ export async function createSite(input: {
   return { success: true, siteId: site.id };
 }
 export async function deleteSite(input: { siteId: string; projectId: string }) {
-  const t0 = Date.now();
   const session = await requireAuth();
-  console.log("인증:", Date.now() - t0, "ms");
 
-  const t1 = Date.now();
   const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  console.log("권한검사:", Date.now() - t1, "ms");
   if (!isOwner) {
     return { error: "삭제 권한이 없어요" };
   }
 
-  const t2 = Date.now();
   const site = await prisma.site.findUnique({
     where: { id: input.siteId },
   });
-  console.log("답사지 조회:", Date.now() - t2, "ms");
   if (!site || site.projectId !== input.projectId) {
     return { error: "답사지를 찾을 수 없어요" };
   }
 
-  const t3 = Date.now();
   await prisma.$transaction([
     prisma.site.delete({ where: { id: input.siteId } }),
     prisma.site.updateMany({
@@ -88,12 +81,8 @@ export async function deleteSite(input: { siteId: string; projectId: string }) {
       data: { orderIndex: { decrement: 1 } },
     }),
   ]);
-  console.log("삭제 트랜잭션:", Date.now() - t3, "ms");
 
-  const t4 = Date.now();
   revalidatePath(`/projects/${input.projectId}`);
-  console.log("revalidate:", Date.now() - t4, "ms");
-
   return { success: true };
 }
 
