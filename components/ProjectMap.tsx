@@ -3,12 +3,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
+import { getCurrentPosition } from "@/lib/geolocation";
+
 
 declare global {
   interface Window {
     naver: any;
     navermap_authFailure?: () => void;
-  }
+  } 
 }
 
 interface Site {
@@ -26,8 +28,11 @@ interface ProjectMapProps {
 
 export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const myLocationMarkerRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -45,6 +50,7 @@ export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps)
       center: bounds.getCenter(),
       zoom: 10,
     });
+    mapRef.current = map;
 
     // 답사지가 여러 개면 bounds에 맞춰 자동 zoom
     if (sites.length > 1) {
@@ -67,16 +73,11 @@ export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps)
         icon: {
           content: `
             <div style="
-              width: 32px;
-              height: 32px;
-              background: #111827;
-              color: white;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: bold;
-              font-size: 14px;
+              width: 32px; height: 32px;
+              background: #111827; color: white;
+              border-radius: 50%; 
+              display: flex; align-items: center; justify-content: center;
+              font-weight: bold; font-size: 14px;
               border: 2px solid white;
               box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             ">${index + 1}</div>
@@ -108,6 +109,58 @@ export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps)
     };
   }, [isLoaded, sites]);
 
+  // 현재 위치 표시
+  async function handleShowMyLocation() {
+    setError(null);
+    setLocating(true);
+
+    try {
+      const coords = await getCurrentPosition();
+
+      if (!mapRef.current || !window.naver) {
+        setError("지도가 아직 준비되지 않았어요");
+        return;
+      }
+      const position = new window.naver.maps.LatLng(
+        coords.latitude,
+        coords.longitude
+      );
+
+      //기존 내 위치 마커 제거
+      if (myLocationMarkerRef.current) {
+        myLocationMarkerRef.current.setMap(null);
+      }
+
+      //파란 점 마커
+      myLocationMarkerRef.current = new window.naver.maps.Marker({
+        position,
+        map: mapRef.current,
+        icon: {
+          content: `
+            <div style="
+              width: 20px; height: 20px;
+              background: #2563eb;
+              border-radius: 50%;
+              border: 3px solid white;
+              box-shadow: 0 0 0 2px #2563eb, 0 2px 6px rgba(0,0,0,0.4);
+            "></div>
+          `,
+          anchor: new window.naver.maps.Point(10,10),
+        },
+        title:"현재 내 위치",
+        zIndex: 1000, //답사지 마커보다 위에 표시
+      });
+
+      //내 위치로 지도 이동
+      mapRef.current.setCenter(position);
+      mapRef.current.setZoom(15);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "위치를 가져오지 못했어요");
+    } finally {
+      setLocating(false);
+    }
+  }
+
   const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
 
   if (sites.length === 0) {
@@ -126,6 +179,23 @@ export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps)
         onReady={() => setIsLoaded(true)}
         onError={() => setError("네이버 지도 SDK 로드 실패")}
       />
+
+      {/*내 위치 버튼 - 눈에 띄게 설정*/}
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={handleShowMyLocation}
+          disabled={!isLoaded || locating}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+          >
+            <span className="text-base">📍</span>
+            {locating ? "위치 확인 중...": "내 위치"}
+          </button>
+          <span className="text-xs text-gray-500">
+            버튼을 누르면 현재 위치가 표시됩니다
+          </span>
+      </div>
+
       {error && (
         <div className="mb-2 rounded bg-red-50 p-3 text-sm text-red-700">
           {error}
