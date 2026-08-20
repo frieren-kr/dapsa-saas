@@ -23,10 +23,11 @@ interface Site {
 
 interface ProjectMapProps {
   sites: Site[];
+  routeData?: number[][] | null; //저장된 도로경로 좌표
   height?: string;
 }
 
-export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps) {
+export default function ProjectMap({ sites, routeData, height = "400px" }: ProjectMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const myLocationMarkerRef = useRef<any>(null);
@@ -89,17 +90,30 @@ export default function ProjectMap({ sites, height = "400px" }: ProjectMapProps)
     });
 
     // 답사지가 2개 이상이면 이동 경로 폴리라인 그리기
-    if (sortedSites.length >= 2) {
-      const path = sortedSites.map(
-        (s) => new window.naver.maps.LatLng(s.latitude, s.longitude)
+    if (routeData && routeData.length >= 2) {
+      // 저장된 도로 경로가 있으면 실제 도로 따라 그리기
+      // routeData는 [경도, 위도] 순서 (네이버 Directions 형식)
+      const path = routeData.map(
+        (coord) => new window.naver.maps.LatLng(coord[1], coord[0])
       );
-
       new window.naver.maps.Polyline({
         map,
         path,
         strokeColor: "#3b82f6",
-        strokeWeight: 3,
-        strokeOpacity: 0.7,
+        strokeWeight: 5,
+        strokeOpacity: 0.8,
+      });
+    } else if (sortedSites.length >= 2) {
+      // 경로 미계산 시 직선(점선)으로 대략 표시
+      const path = sortedSites.map(
+        (s) => new window.naver.maps.LatLng(s.latitude, s.longitude)
+      );
+      new window.naver.maps.Polyline({
+        map,
+        path,
+        strokeColor: "#9ca3af",
+        strokeWeight: 2,
+        strokeOpacity: 0.5,
         strokeStyle: "shortdash",
       });
     }

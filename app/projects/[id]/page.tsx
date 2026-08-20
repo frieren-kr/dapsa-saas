@@ -8,6 +8,7 @@ import SiteList from "@/components/SiteList";
 import ScheduleSection from "@/components/ScheduleSection";
 import InvitationManager from "@/components/InvitationManager";
 import ProjectMap from "@/components/ProjectMap";
+import RouteControl from "@/components/RouteControl";
 
 export default async function ProjectPage({
   params,
@@ -29,7 +30,7 @@ export default async function ProjectPage({
         orderBy: { orderIndex: "asc" },
       },
       schedules: {
-        orderBy: [{ date: "asc" }, { orderIndex: "asc" }],
+        orderBy: [{ date: "asc" }, { startTime: "asc" }, { orderIndex: "asc" }],
         include: {
           site: { select: { id: true, name: true } },
         },
@@ -54,6 +55,22 @@ export default async function ProjectPage({
   if (!project) notFound();
 
   const canEdit = await isProjectOrganizer(session.user.id, id);
+
+  // 경로가 최신인지 판단
+  // 답사지 중 가장 최근에 생성/수정된 시각 vs 경로 계산 시각 비교
+  const latestSiteChange = project.sites.reduce<Date | null>((latest, site) => {
+    const siteTime = new Date(site.createdAt);
+    if (!latest || siteTime > latest) return siteTime;
+    return latest;
+  }, null);
+
+  const routeIsStale =
+    project.sites.length >= 2 &&
+    (!project.routeUpdatedAt ||
+      (latestSiteChange !== null &&
+        new Date(project.routeUpdatedAt) < latestSiteChange));
+
+  const hasRoute = project.routeData !== null && project.sites.length >= 2;
 
   // 날짜 표시 헬퍼
   const formatDate = (d: Date | null) =>
@@ -128,10 +145,23 @@ export default async function ProjectPage({
         {/* 전체 동선 지도 - 답사지 있을 때만 */}
         {project.sites.length > 0 && (
           <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              전체 동선
-            </h2>
-            <ProjectMap sites={project.sites} height="400px" />
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">전체 동선</h2>
+
+            <RouteControl
+              projectId={project.id}
+              canEdit={canEdit}
+              hasRoute={hasRoute}
+              routeIsStale={routeIsStale}
+              distance={project.routeDistance}
+              duration={project.routeDuration}
+              siteCount={project.sites.length}
+            />
+
+            <ProjectMap
+              sites={project.sites}
+              routeData={project.routeData as number[][] | null}
+              height="400px"
+            />
             <p className="mt-2 text-xs text-gray-500">
               지도의 번호를 눌러 답사지 순서를 확인할 수 있어요.
             </p>

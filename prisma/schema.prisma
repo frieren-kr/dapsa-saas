@@ -92,6 +92,10 @@ model Project {
   status      ProjectStatus @default(DRAFT)
   createdAt   DateTime      @default(now())
 
+  //경로 캐시 필드 
+  routeData      Json?     //경로 좌표 배열
+  routeUpdatedAt DateTime? //경로 계산 시각(낡음 판단용)
+  
   organizerId String
   organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
 

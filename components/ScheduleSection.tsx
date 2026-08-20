@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import {
   createSchedule,
   updateSchedule,
   deleteSchedule,
 } from "@/app/projects/[id]/actions";
-import Link from "next/link";
 
 interface Site {
   id: string;
@@ -21,10 +21,7 @@ interface Schedule {
   endTime: string;
   orderIndex: number;
   siteId: string | null;
-  site: {
-    id: string;
-    name: string;
-  } | null;
+  site: { id: string; name: string } | null;
 }
 
 interface ScheduleSectionProps {
@@ -34,13 +31,36 @@ interface ScheduleSectionProps {
   canEdit: boolean;
 }
 
-// 날짜 → YYYY-MM-DD 문자열
-function dateToInputValue(date: Date): string {
+// Date → "YYYY-MM-DD" (로컬 기준. UTC 변환 시 날짜 밀림 방지)
+function toDateKey(date: Date): string {
   const d = new Date(date);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+// "YYYY-MM-DD" → "8월 17일 (월)"
+function formatTabLabel(dateKey: string): string {
+  return new Date(dateKey).toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+}
+
+// 날짜별 그룹핑 + 각 날짜 안에서 시간순 정렬(방어적)
+function groupByDate(schedules: Schedule[]): Record<string, Schedule[]> {
+  const result: Record<string, Schedule[]> = {};
+  for (const s of schedules) {
+    const key = toDateKey(s.date);
+    if (!result[key]) result[key] = [];
+    result[key].push(s);
+  }
+  for (const key of Object.keys(result)) {
+    result[key].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }
+  return result;
 }
 
 export default function ScheduleSection({
@@ -51,12 +71,20 @@ export default function ScheduleSection({
 }: ScheduleSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeDate, setActiveDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // 날짜별 그룹핑
   const grouped = groupByDate(schedules);
   const dateKeys = Object.keys(grouped).sort();
+
+  // activeDate가 비었거나 사라진 날짜면 첫 날짜로 대체
+  const effectiveDate =
+    activeDate && dateKeys.includes(activeDate)
+      ? activeDate
+      : dateKeys[0] ?? null;
+
+  const activeSchedules = effectiveDate ? grouped[effectiveDate] : [];
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
@@ -84,12 +112,13 @@ export default function ScheduleSection({
         </div>
       )}
 
-      {/* 추가 폼 */}
+      {/* 추가 폼 - 현재 선택된 날짜를 기본값으로 */}
       {isAdding && canEdit && (
         <ScheduleForm
           projectId={projectId}
           sites={sites}
           mode="create"
+          defaultDate={effectiveDate ?? ""}
           onDone={() => setIsAdding(false)}
           onError={setError}
           isPending={isPending}
@@ -97,7 +126,6 @@ export default function ScheduleSection({
         />
       )}
 
-      {/* 일정 목록 */}
       {schedules.length === 0 ? (
         <p className="text-sm text-gray-600">
           {canEdit
@@ -105,112 +133,128 @@ export default function ScheduleSection({
             : "아직 등록된 일정이 없어요."}
         </p>
       ) : (
-        <div className="space-y-4">
-          {dateKeys.map((dateKey) => (
-            <div key={dateKey}>
-              <h3 className="mb-2 text-sm font-semibold text-gray-700">
-                {formatDate(dateKey)}
-              </h3>
-              <ol className="space-y-1">
-                {grouped[dateKey].map((schedule) => {
-                  const isEditingThis = editingId === schedule.id;
+        <>
+          {/* 날짜 탭 */}
+          <div className="mb-4 flex flex-wrap gap-1 border-b">
+            {dateKeys.map((dateKey) => {
+              const isActive = dateKey === effectiveDate;
+              return (
+                <button
+                  key={dateKey}
+                  type="button"
+                  onClick={() => setActiveDate(dateKey)}
+                  className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+                    isActive
+                      ? "border-black font-medium text-gray-900"
+                      : "border-transparent text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  {formatTabLabel(dateKey)}
+                  <span className="ml-1 text-xs text-gray-400">
+                    ({grouped[dateKey].length})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-                  if (isEditingThis) {
-                    return (
-                      <li key={schedule.id}>
-                        <ScheduleForm
-                          projectId={projectId}
-                          sites={sites}
-                          mode="edit"
-                          initialData={{
-                            scheduleId: schedule.id,
-                            title: schedule.title,
-                            date: dateToInputValue(schedule.date),
-                            startTime: schedule.startTime,
-                            endTime: schedule.endTime,
-                            siteId: schedule.siteId || "",
-                          }}
-                          onDone={() => setEditingId(null)}
-                          onError={setError}
-                          isPending={isPending}
-                          startTransition={startTransition}
-                        />
-                      </li>
-                    );
-                  }
+          {/* 선택된 날짜의 일정만 */}
+          <ol className="space-y-1">
+            {activeSchedules.map((schedule) => {
+              const isEditingThis = editingId === schedule.id;
 
-                  return (
-                    <li
-                      key={schedule.id}
-                      className="flex items-center gap-3 rounded border border-gray-200 p-3"
-                    >
-                      <div className="w-24 shrink-0 text-xs text-gray-500">
-                        {schedule.startTime} – {schedule.endTime}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {schedule.title}
-                        </p>
-                        {schedule.site && (
-                          <Link
-                            href={`/projects/${projectId}/sites/${schedule.site.id}`}
-                            className="text-xs text-blue-600 hover:underline"
-                          >
-                            → {schedule.site.name}
-                          </Link>
-                        )}
-                      </div>
-                      {canEdit && (
-                        <div className="flex shrink-0 gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingId(schedule.id);
-                              setError(null);
-                            }}
-                            disabled={isPending || isAdding}
-                            className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
-                          >
-                            수정
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (
-                                !confirm(
-                                  `"${schedule.title}" 일정을 삭제할까요?`
-                                )
-                              )
-                                return;
-                              setError(null);
-                              startTransition(async () => {
-                                const result = await deleteSchedule({
-                                  scheduleId: schedule.id,
-                                  projectId,
-                                });
-                                if (result.error) setError(result.error);
-                              });
-                            }}
-                            disabled={isPending}
-                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          ))}
-        </div>
+              if (isEditingThis) {
+                return (
+                  <li key={schedule.id}>
+                    <ScheduleForm
+                      projectId={projectId}
+                      sites={sites}
+                      mode="edit"
+                      initialData={{
+                        scheduleId: schedule.id,
+                        title: schedule.title,
+                        date: toDateKey(schedule.date),
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        siteId: schedule.siteId || "",
+                      }}
+                      onDone={() => setEditingId(null)}
+                      onError={setError}
+                      isPending={isPending}
+                      startTransition={startTransition}
+                    />
+                  </li>
+                );
+              }
+
+              return (
+                <li
+                  key={schedule.id}
+                  className="flex items-center gap-3 rounded border border-gray-200 p-3"
+                >
+                  <div className="w-24 shrink-0 text-xs text-gray-500">
+                    {schedule.startTime} – {schedule.endTime}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {schedule.title}
+                    </p>
+                    {schedule.site && (
+                      <Link
+                        href={`/projects/${projectId}/sites/${schedule.site.id}`}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        → {schedule.site.name}
+                      </Link>
+                    )}
+                  </div>
+                  {canEdit && (
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(schedule.id);
+                          setError(null);
+                        }}
+                        disabled={isPending || isAdding}
+                        className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            !confirm(`"${schedule.title}" 일정을 삭제할까요?`)
+                          )
+                            return;
+                          setError(null);
+                          startTransition(async () => {
+                            const result = await deleteSchedule({
+                              scheduleId: schedule.id,
+                              projectId,
+                            });
+                            if (result.error) setError(result.error);
+                          });
+                        }}
+                        disabled={isPending}
+                        className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
     </div>
   );
 }
 
-// 폼 서브 컴포넌트 (create/edit 공용)
+// ── 폼 (create/edit 공용) ──
 interface ScheduleFormProps {
   projectId: string;
   sites: Site[];
@@ -223,6 +267,7 @@ interface ScheduleFormProps {
     endTime: string;
     siteId: string;
   };
+  defaultDate?: string;
   onDone: () => void;
   onError: (msg: string | null) => void;
   isPending: boolean;
@@ -234,13 +279,14 @@ function ScheduleForm({
   sites,
   mode,
   initialData,
+  defaultDate,
   onDone,
   onError,
   isPending,
   startTransition,
 }: ScheduleFormProps) {
   const [title, setTitle] = useState(initialData?.title || "");
-  const [date, setDate] = useState(initialData?.date || "");
+  const [date, setDate] = useState(initialData?.date || defaultDate || "");
   const [startTime, setStartTime] = useState(initialData?.startTime || "");
   const [endTime, setEndTime] = useState(initialData?.endTime || "");
   const [siteId, setSiteId] = useState(initialData?.siteId || "");
@@ -277,7 +323,6 @@ function ScheduleForm({
         onError(result.error);
         return;
       }
-
       onDone();
     });
   }
@@ -378,25 +423,4 @@ function ScheduleForm({
       </div>
     </form>
   );
-}
-
-// 헬퍼
-function groupByDate(schedules: Schedule[]): Record<string, Schedule[]> {
-  const result: Record<string, Schedule[]> = {};
-  for (const s of schedules) {
-    const key = new Date(s.date).toISOString().split("T")[0];
-    if (!result[key]) result[key] = [];
-    result[key].push(s);
-  }
-  return result;
-}
-
-function formatDate(dateKey: string): string {
-  const d = new Date(dateKey);
-  return d.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  });
 }

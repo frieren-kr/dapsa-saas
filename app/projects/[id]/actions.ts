@@ -11,6 +11,7 @@ import {
   updateScheduleSchema,
   createInvitationsSchema,
 } from "@/lib/validations";
+import { calculateRoute } from "@/lib/directions";
 
 export async function createSite(input: {
   projectId: string;
@@ -483,4 +484,61 @@ export async function cancelInvitation(input: {
 
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };
+}
+
+export async function updateProjectRoute(input: { projectId: string }) {
+  const session = await requireAuth();
+
+  // 권한 - organizer만 경로 계산 가능
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "경로를 계산할 권한이 없어요" };
+  }
+
+  // 답사지들을 순서대로 조회
+  const sites = await prisma.site.findMany({
+    where: { projectId: input.projectId },
+    orderBy: { orderIndex: "asc" },
+    select: { latitude: true, longitude: true },
+  });
+
+  if (sites.length < 2) {
+    return { error: "답사지가 2곳 이상 있어야 경로를 계산할 수 있어요" };
+  }
+
+  if (sites.length > 16) {
+    return { error: "답사지가 너무 많아요 (최대 16곳까지 경로 계산 가능)" };
+  }
+
+  try {
+    const result = await calculateRoute(
+      sites.map((s) => ({ latitude: s.latitude, longitude: s.longitude }))
+    );
+
+    if (!result) {
+      return { error: "경로를 계산할 수 없어요" };
+    }
+
+    // 계산 결과를 프로젝트에 저장
+    await prisma.project.update({
+      where: { id: input.projectId },
+      data: {
+        routeData: result.path,
+        routeDistance: result.distance,
+        routeDuration: result.duration,
+        routeUpdatedAt: new Date(),
+      },
+    });
+
+    revalidatePath(`/projects/${input.projectId}`);
+    return {
+      success: true,
+      distance: result.distance,
+      duration: result.duration,
+    };
+  } catch (e) {
+    return {
+      error: e instanceof Error ? e.message : "경로 계산 중 오류가 발생했어요",
+    };
+  }
 }
