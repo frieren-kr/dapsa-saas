@@ -5,29 +5,32 @@ import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { getCurrentPosition } from "@/lib/geolocation";
 
-
 declare global {
   interface Window {
     naver: any;
     navermap_authFailure?: () => void;
-  } 
+  }
 }
 
-interface Site {
-  id: string;
+// 일정 순서대로 정렬된 답사지 (마커용)
+interface RouteStop {
+  siteId: string;
   name: string;
   latitude: number;
   longitude: number;
-  orderIndex: number;
 }
 
 interface ProjectMapProps {
-  sites: Site[];
-  routeData?: number[][] | null; //저장된 도로경로 좌표
+  stops: RouteStop[];           // 선택된 날짜의 일정 순 답사지
+  routePath?: number[][] | null; // 그 날짜의 도로 경로
   height?: string;
 }
 
-export default function ProjectMap({ sites, routeData, height = "400px" }: ProjectMapProps) {
+export default function ProjectMap({
+  stops,
+  routePath,
+  height = "400px",
+}: ProjectMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const myLocationMarkerRef = useRef<any>(null);
@@ -39,12 +42,11 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
     if (!isLoaded) return;
     if (!mapContainerRef.current) return;
     if (!window.naver) return;
-    if (sites.length === 0) return;
+    if (stops.length === 0) return;
 
-    // 답사지들의 중심 좌표 + 모든 답사지가 화면에 들어오도록 zoom 조정
     const bounds = new window.naver.maps.LatLngBounds();
-    sites.forEach((site) => {
-      bounds.extend(new window.naver.maps.LatLng(site.latitude, site.longitude));
+    stops.forEach((stop) => {
+      bounds.extend(new window.naver.maps.LatLng(stop.latitude, stop.longitude));
     });
 
     const map = new window.naver.maps.Map(mapContainerRef.current, {
@@ -53,21 +55,16 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
     });
     mapRef.current = map;
 
-    // 답사지가 여러 개면 bounds에 맞춰 자동 zoom
-    if (sites.length > 1) {
+    if (stops.length > 1) {
       map.fitBounds(bounds);
     }
 
-    // 답사지 정렬 순서대로 순회하며 마커 + 정보창
-    const sortedSites = [...sites].sort((a, b) => a.orderIndex - b.orderIndex);
-
-    sortedSites.forEach((site, index) => {
+    // 일정 순서대로 마커 (stops가 이미 정렬돼 옴)
+    stops.forEach((stop, index) => {
       const position = new window.naver.maps.LatLng(
-        site.latitude,
-        site.longitude
+        stop.latitude,
+        stop.longitude
       );
-
-      // 커스텀 마커 - 순서 번호가 원 안에 들어감
       new window.naver.maps.Marker({
         position,
         map,
@@ -76,7 +73,7 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
             <div style="
               width: 32px; height: 32px;
               background: #111827; color: white;
-              border-radius: 50%; 
+              border-radius: 50%;
               display: flex; align-items: center; justify-content: center;
               font-weight: bold; font-size: 14px;
               border: 2px solid white;
@@ -85,15 +82,13 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
           `,
           anchor: new window.naver.maps.Point(16, 16),
         },
-        title: `${index + 1}. ${site.name}`,
+        title: `${index + 1}. ${stop.name}`,
       });
     });
 
-    // 답사지가 2개 이상이면 이동 경로 폴리라인 그리기
-    if (routeData && routeData.length >= 2) {
-      // 저장된 도로 경로가 있으면 실제 도로 따라 그리기
-      // routeData는 [경도, 위도] 순서 (네이버 Directions 형식)
-      const path = routeData.map(
+    // 경로: 저장된 도로 경로 있으면 실선, 없으면 직선 점선
+    if (routePath && routePath.length >= 2) {
+      const path = routePath.map(
         (coord) => new window.naver.maps.LatLng(coord[1], coord[0])
       );
       new window.naver.maps.Polyline({
@@ -103,9 +98,8 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
         strokeWeight: 5,
         strokeOpacity: 0.8,
       });
-    } else if (sortedSites.length >= 2) {
-      // 경로 미계산 시 직선(점선)으로 대략 표시
-      const path = sortedSites.map(
+    } else if (stops.length >= 2) {
+      const path = stops.map(
         (s) => new window.naver.maps.LatLng(s.latitude, s.longitude)
       );
       new window.naver.maps.Polyline({
@@ -121,16 +115,13 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
     window.navermap_authFailure = () => {
       setError("네이버 지도 인증 실패");
     };
-  }, [isLoaded, sites]);
+  }, [isLoaded, stops, routePath]);
 
-  // 현재 위치 표시
   async function handleShowMyLocation() {
     setError(null);
     setLocating(true);
-
     try {
       const coords = await getCurrentPosition();
-
       if (!mapRef.current || !window.naver) {
         setError("지도가 아직 준비되지 않았어요");
         return;
@@ -139,13 +130,9 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
         coords.latitude,
         coords.longitude
       );
-
-      //기존 내 위치 마커 제거
       if (myLocationMarkerRef.current) {
         myLocationMarkerRef.current.setMap(null);
       }
-
-      //파란 점 마커
       myLocationMarkerRef.current = new window.naver.maps.Marker({
         position,
         map: mapRef.current,
@@ -159,13 +146,11 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
               box-shadow: 0 0 0 2px #2563eb, 0 2px 6px rgba(0,0,0,0.4);
             "></div>
           `,
-          anchor: new window.naver.maps.Point(10,10),
+          anchor: new window.naver.maps.Point(10, 10),
         },
-        title:"현재 내 위치",
-        zIndex: 1000, //답사지 마커보다 위에 표시
+        title: "현재 내 위치",
+        zIndex: 1000,
       });
-
-      //내 위치로 지도 이동
       mapRef.current.setCenter(position);
       mapRef.current.setZoom(15);
     } catch (e) {
@@ -177,10 +162,10 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
 
   const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
 
-  if (sites.length === 0) {
+  if (stops.length === 0) {
     return (
       <div className="rounded border bg-gray-50 p-8 text-center text-sm text-gray-500">
-        아직 등록된 답사지가 없어요.
+        이 날짜에는 답사지가 연결된 일정이 없어요.
       </div>
     );
   }
@@ -194,20 +179,19 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
         onError={() => setError("네이버 지도 SDK 로드 실패")}
       />
 
-      {/*내 위치 버튼 - 눈에 띄게 설정*/}
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
           onClick={handleShowMyLocation}
           disabled={!isLoaded || locating}
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-          >
-            <span className="text-base">📍</span>
-            {locating ? "위치 확인 중...": "내 위치"}
-          </button>
-          <span className="text-xs text-gray-500">
-            버튼을 누르면 현재 위치가 표시됩니다
-          </span>
+        >
+          <span className="text-base">📍</span>
+          {locating ? "위치 확인 중..." : "내 위치"}
+        </button>
+        <span className="text-xs text-gray-500">
+          버튼을 누르면 현재 위치가 표시됩니다
+        </span>
       </div>
 
       {error && (
@@ -215,6 +199,7 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
           {error}
         </div>
       )}
+
       <div
         ref={mapContainerRef}
         style={{ width: "100%", height }}
@@ -222,4 +207,4 @@ export default function ProjectMap({ sites, routeData, height = "400px" }: Proje
       />
     </>
   );
-}  
+}

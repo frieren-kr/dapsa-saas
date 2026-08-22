@@ -23,11 +23,22 @@ export async function calculateRoute(
   if (!clientId || !clientSecret) {
     throw new Error("네이버 지도 API 키가 설정되지 않았어요");
   }
-
-  // 출발지 = 첫 답사지, 목적지 = 마지막 답사지, 나머지 = 경유지
-  const start = points[0];
-  const goal = points[points.length - 1];
-  const waypoints = points.slice(1, -1); // 중간 답사지들
+  //왕복 감치ㅣ 첫 지점과 마지막 지점이 같으면 마지막 제외
+  let routePoints = points;
+  if (points.length >= 3) {
+    const first =points[0];
+    const last = points[points.length -1];
+    if (
+      first.latitude === last.latitude &&
+      first.longitude === last.longitude
+    ) {
+      routePoints = points.slice(0,-1); // 마지막 지점 제외
+    }
+  }
+  
+  const start = routePoints[0];
+  const goal = routePoints[routePoints.length - 1];
+  const waypoints = routePoints.slice(1, -1); // 중간 답사지들
 
   // 좌표는 "경도,위도" 형식 (네이버 규칙: 경도 먼저)
   const startParam = `${start.longitude},${start.latitude}`;
@@ -47,6 +58,7 @@ export async function calculateRoute(
   if (waypointsParam) {
     url.searchParams.set("waypoints", waypointsParam);
   }
+  url.searchParams.set("option", "trafast"); // 실시간 빠른길, 경유지 순서 유지
 
   // API 호출 - 헤더에 인증 정보
   const response = await fetch(url.toString(), {
@@ -60,15 +72,15 @@ export async function calculateRoute(
     throw new Error(`경로 계산 실패: ${response.status}`);
   }
 
-  const data = await response.json();
 
   // 응답 코드 확인 (0이 성공)
+  const data = await response.json();
   if (data.code !== 0) {
     throw new Error(`경로를 찾을 수 없어요: ${data.message || "알 수 없는 오류"}`);
   }
-
-  // 결과 파싱 - traoptimal(추천 경로) 사용
-  const route = data.route?.traoptimal?.[0];
+  
+  // 결과 파싱 - trafast(빠른 경로) 사용
+  const route = data.route?.trafast?.[0];
   if (!route) {
     throw new Error("경로 데이터가 없어요");
   }

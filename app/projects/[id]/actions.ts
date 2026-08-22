@@ -489,53 +489,96 @@ export async function cancelInvitation(input: {
 export async function updateProjectRoute(input: { projectId: string }) {
   const session = await requireAuth();
 
-  // 권한 - organizer만 경로 계산 가능
   const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
   if (!isOwner) {
     return { error: "경로를 계산할 권한이 없어요" };
   }
 
-  // 답사지들을 순서대로 조회
-  const sites = await prisma.site.findMany({
-    where: { projectId: input.projectId },
-    orderBy: { orderIndex: "asc" },
-    select: { latitude: true, longitude: true },
+  // 일정을 날짜순·시간순으로, 답사지 좌표까지 함께 조회
+  const schedules = await prisma.schedule.findMany({
+    where: {
+      projectId: input.projectId,
+      siteId: { not: null }, // 답사지 연결된 일정만
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+    include: {
+      site: {
+        select: { latitude: true, longitude: true },
+      },
+    },
   });
 
-  if (sites.length < 2) {
-    return { error: "답사지가 2곳 이상 있어야 경로를 계산할 수 있어요" };
+  if (schedules.length < 2) {
+    return {
+      error: "답사지가 연결된 일정이 2개 이상 있어야 경로를 계산할 수 있어요",
+    };
   }
 
-  if (sites.length > 16) {
-    return { error: "답사지가 너무 많아요 (최대 16곳까지 경로 계산 가능)" };
+  // 날짜별로 그룹핑
+  const byDate: Record <
+    string,
+    { latitude: number; longitude: number }[]
+  > = {};
+
+  for (const s of schedules) {
+    if (!s.site) continue;
+    // 로컬 기준 날짜 키
+    const d = new Date(s.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
+
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push({
+      latitude: s.site.latitude,
+      longitude: s.site.longitude,
+    });
   }
+
+  // 각 날짜별로 경로 계산
+  const routeData: Record <
+    string,
+    { path: number[][]; distance: number; duration: number }
+  > = {};
 
   try {
-    const result = await calculateRoute(
-      sites.map((s) => ({ latitude: s.latitude, longitude: s.longitude }))
-    );
+    for (const [dateKey, points] of Object.entries(byDate)) {
+      // 그 날 답사지가 1곳뿐이면 경로 없음 (건너뜀)
+      if (points.length < 2) continue;
 
-    if (!result) {
-      return { error: "경로를 계산할 수 없어요" };
+      if (points.length > 16) {
+        return {
+          error: `${dateKey}에 답사지가 너무 많아요 (하루 최대 16곳)`,
+        };
+      }
+
+      const result = await calculateRoute(points);
+      if (result) {
+        routeData[dateKey] = {
+          path: result.path,
+          distance: result.distance,
+          duration: result.duration,
+        };
+      }
     }
 
-    // 계산 결과를 프로젝트에 저장
+    if (Object.keys(routeData).length === 0) {
+      return {
+        error: "경로를 계산할 수 있는 날짜가 없어요 (하루에 답사지 2곳 이상 필요)",
+      };
+    }
+
     await prisma.project.update({
       where: { id: input.projectId },
       data: {
-        routeData: result.path,
-        routeDistance: result.distance,
-        routeDuration: result.duration,
+        routeData: routeData,
         routeUpdatedAt: new Date(),
       },
     });
 
     revalidatePath(`/projects/${input.projectId}`);
-    return {
-      success: true,
-      distance: result.distance,
-      duration: result.duration,
-    };
+    return { success: true };
   } catch (e) {
     return {
       error: e instanceof Error ? e.message : "경로 계산 중 오류가 발생했어요",

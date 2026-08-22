@@ -8,7 +8,7 @@ import SiteList from "@/components/SiteList";
 import ScheduleSection from "@/components/ScheduleSection";
 import InvitationManager from "@/components/InvitationManager";
 import ProjectMap from "@/components/ProjectMap";
-import RouteControl from "@/components/RouteControl";
+import RouteView from "@/components/RouteView";
 
 export default async function ProjectPage({
   params,
@@ -32,7 +32,7 @@ export default async function ProjectPage({
       schedules: {
         orderBy: [{ date: "asc" }, { startTime: "asc" }, { orderIndex: "asc" }],
         include: {
-          site: { select: { id: true, name: true } },
+          site: { select: { id: true, name: true, latitude: true, longitude: true } },
         },
       },
       invitations: {
@@ -70,7 +70,7 @@ export default async function ProjectPage({
       (latestSiteChange !== null &&
         new Date(project.routeUpdatedAt) < latestSiteChange));
 
-  const hasRoute = project.routeData !== null && project.sites.length >= 2;
+  
 
   // 날짜 표시 헬퍼
   const formatDate = (d: Date | null) =>
@@ -143,30 +143,44 @@ export default async function ProjectPage({
         </div>
 
         {/* 전체 동선 지도 - 답사지 있을 때만 */}
-        {project.sites.length > 0 && (
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">전체 동선</h2>
+        {(() => {
+          // 답사지 연결된 일정만, 날짜·시간순으로 → stops
+          const stops = project.schedules
+            .filter((s) => s.site !== null)
+            .map((s) => {
+              const d = new Date(s.date);
+              const dateKey = `${d.getFullYear()}-${String(
+                d.getMonth() + 1
+              ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              return {
+                siteId: s.site!.id,
+                name: s.site!.name,
+                latitude: s.site!.latitude,
+                longitude: s.site!.longitude,
+                date: dateKey,
+              };
+            });
 
-            <RouteControl
-              projectId={project.id}
-              canEdit={canEdit}
-              hasRoute={hasRoute}
-              routeIsStale={routeIsStale}
-              distance={project.routeDistance}
-              duration={project.routeDuration}
-              siteCount={project.sites.length}
-            />
+          if (stops.length === 0) return null;
 
-            <ProjectMap
-              sites={project.sites}
-              routeData={project.routeData as number[][] | null}
-              height="400px"
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              지도의 번호를 눌러 답사지 순서를 확인할 수 있어요.
-            </p>
-          </div>
-        )}
+          return (
+            <div className="mb-6 rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">전체 동선</h2>
+              <RouteView
+                projectId={project.id}
+                canEdit={canEdit}
+                stops={stops}
+                routeData={
+                  project.routeData as Record <
+                    string,
+                    { path: number[][]; distance: number; duration: number }
+                  > | null
+                }
+                routeIsStale={routeIsStale}
+              />
+            </div>
+          );
+        })()}
 
         {/* 일정 섹션 */}
         <div className="mb-6">
