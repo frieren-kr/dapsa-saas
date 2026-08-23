@@ -173,7 +173,12 @@ export default async function ProjectPage({
                 routeData={
                   project.routeData as Record <
                     string,
-                    { path: number[][]; distance: number; duration: number }
+                    { 
+                      path: number[][]; 
+                      distance: number; 
+                      duration: number; 
+                      legs: { distance: number; duration:number; fromName:string; toName:string} []; 
+                    }
                   > | null
                 }
                 routeIsStale={routeIsStale}

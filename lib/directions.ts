@@ -3,11 +3,19 @@ interface RoutePoint {
   longitude: number;
 }
 
+interface RouteLeg {
+  distance: number; // 구간 거리-미터
+  duration: number; //구간 시간-밀리초
+}
+
 interface RouteResult {
   path: number[][];      // [[lng, lat], ...] 경로 좌표
   distance: number;      // 미터
   duration: number;      // 밀리초
+  legs: RouteLeg[];        // 구간별 거리/시간
+  usedPointCount: number; //실제 경로에 사용된 지점 수(왕복 제외)
 }
+
 
 export async function calculateRoute(
   points: RoutePoint[]
@@ -44,10 +52,10 @@ export async function calculateRoute(
   const startParam = `${start.longitude},${start.latitude}`;
   const goalParam = `${goal.longitude},${goal.latitude}`;
 
-  // 경유지는 콜론(:)으로 구분
+  // 경유지는 파이프(|)로 구분 (콜론은 한 경유지 내부 좌표 구분자)
   const waypointsParam = waypoints
     .map((w) => `${w.longitude},${w.latitude}`)
-    .join(":");
+    .join("|");
 
   // API URL 구성
   const url = new URL(
@@ -84,10 +92,33 @@ export async function calculateRoute(
   if (!route) {
     throw new Error("경로 데이터가 없어요");
   }
+  //구간별 정보 조립
+  //waypoints배열 : 각 경유지까지의 구간정보
+  //goal: 마지막 경유지 -> 목적지 구간 정보
+  const summary = route.summary;
+  const legs: RouteLeg[] = [];
+
+  //경유지들의 구간
+  if (summary.waypoints && Array.isArray(summary.waypoints)) {
+    for (const wp of summary.waypoints) {
+      legs.push({
+        distance: wp.distance ?? 0,
+        duration: wp.duration ?? 0,
+      });
+    }
+  }
+
+  //마지막 목적지 구간
+  legs.push({
+    distance: summary.goal.distance ?? 0,
+    duration: summary.goal.duration ?? 0,
+  });
 
   return {
     path: route.path,                    // 도로 좌표 배열
     distance: route.summary.distance,    // 미터
     duration: route.summary.duration,    // 밀리초
+    legs,
+    usedPointCount: routePoints.length, //왕복 제외 실제 지점 수
   };
 }

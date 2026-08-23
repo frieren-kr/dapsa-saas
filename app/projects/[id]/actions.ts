@@ -503,7 +503,7 @@ export async function updateProjectRoute(input: { projectId: string }) {
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
     include: {
       site: {
-        select: { latitude: true, longitude: true },
+        select: { latitude: true, longitude: true, name:true },
       },
     },
   });
@@ -517,7 +517,7 @@ export async function updateProjectRoute(input: { projectId: string }) {
   // 날짜별로 그룹핑
   const byDate: Record <
     string,
-    { latitude: number; longitude: number }[]
+    { latitude: number; longitude: number; name: string }[]
   > = {};
 
   for (const s of schedules) {
@@ -533,13 +533,14 @@ export async function updateProjectRoute(input: { projectId: string }) {
     byDate[key].push({
       latitude: s.site.latitude,
       longitude: s.site.longitude,
+      name: s.site.name,
     });
   }
 
   // 각 날짜별로 경로 계산
   const routeData: Record <
     string,
-    { path: number[][]; distance: number; duration: number }
+    { path: number[][]; distance: number; duration: number; legs: {distance: number; duration:number} [] }
   > = {};
 
   try {
@@ -555,10 +556,20 @@ export async function updateProjectRoute(input: { projectId: string }) {
 
       const result = await calculateRoute(points);
       if (result) {
+        const usedPoints = points.slice(0, result.usedPointCount);
+
+        const legsWithNames = result.legs.map((leg,i)=>({
+          distance: leg.distance,
+          duration:leg.duration,
+          fromName:usedPoints[i]?.name ?? "",
+          toName: usedPoints[i+1]?.name ?? "",
+        }));
+        
         routeData[dateKey] = {
           path: result.path,
           distance: result.distance,
           duration: result.duration,
+          legs: legsWithNames,
         };
       }
     }

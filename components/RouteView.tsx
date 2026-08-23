@@ -26,6 +26,20 @@ interface RouteViewProps {
   routeIsStale: boolean;
 }
 
+interface RouteLeg {
+  distance: number;
+  duration: number;
+  fromName: string;
+  toName: string;
+}
+
+interface DateRoute {
+  path: number[][];
+  distance: number;
+  duration: number;
+  legs: RouteLeg[];
+}
+
 export default function RouteView({
   projectId,
   canEdit,
@@ -154,6 +168,26 @@ export default function RouteView({
           <span className="text-gray-900">
             예상 소요 <strong>{fmtDuration(activeRoute.duration)}</strong>
           </span>
+        </div>
+      )}
+      {activeRoute && activeRoute.legs && activeRoute.legs.length > 0 && (
+        <div className="mb-3 rounded border border-gray-200 bg-gray-50 p-3">
+          <p className="mb-2 text-xs font-medium text-gray-700">구간별 이동</p>
+          <ul className="space-y-1">
+            {activeRoute.legs.map((leg, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between text-xs text-gray-600"
+              >
+                <span className="flex-1 truncate">
+                  {i + 1}.{leg.fromName} → {leg.toName}
+                </span>
+                <span className="ml-2 shrink-0 text-gray-500">
+                  {fmtDistance(leg.distance)} · {fmtDuration(leg.duration)}
+                </span>
+               </li>
+            ))}
+          </ul>
         </div>
       )}
 

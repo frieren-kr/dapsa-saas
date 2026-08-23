@@ -1,70 +1,6 @@
+﻿=====  =====
 
-
-===== .gitignore =====
-
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-/app/generated/prisma
-
-
-===== AGENTS.md =====
-
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
-
-
-===== app/api/auth/[...all]/route.ts =====
-
-import { auth } from "@/lib/auth";
-import { toNextJsHandler } from "better-auth/next-js";
-
-export const { POST, GET } = toNextJsHandler(auth);
-
-===== app/dashboard/page.tsx =====
-
+===== .\app\dashboard\page.tsx =====
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
@@ -83,8 +19,8 @@ export default async function DashboardPage({
   const params = await searchParams;
   const justCreated = params.created;
 
-  // 준비기관: 본인이 만든 프로젝트 목록
-  // 참여자: 참가한 프로젝트 목록 (아직 초대 시스템 없어서 비어있을 예정)
+  // 以鍮꾧린愿: 蹂몄씤??留뚮뱺 ?꾨줈?앺듃 紐⑸줉
+  // 李몄뿬?? 李멸????꾨줈?앺듃 紐⑸줉 (?꾩쭅 珥덈? ?쒖뒪???놁뼱??鍮꾩뼱?덉쓣 ?덉젙)
 
   const projects =
     session.user.role === "ORGANIZER"
@@ -114,62 +50,68 @@ export default async function DashboardPage({
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="mx-auto max-w-4xl px-4">
-        {/* 헤더 */}
+        {/* ?ㅻ뜑 */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
+            <h1 className="text-2xl font-bold text-gray-900">??쒕낫??/h1>
             <p className="text-sm text-gray-600">
-              {session.user.name}님 ·{" "}
+              {session.user.name}??쨌{" "}
               {session.user.role === "ORGANIZER"
-                ? "답사 준비기관"
-                : "답사 참여자"}
+                ? "?듭궗 以鍮꾧린愿"
+                : "?듭궗 李몄뿬??}
             </p>
           </div>
+          <Link
+            href="/settings"
+            className="text-sm text-gray-600 hover:underline"
+          >
+            ?ㅼ젙
+          </Link>
           <Link
             href="/"
             className="text-sm text-gray-600 hover:underline"
           >
-            메인
+            硫붿씤
           </Link>
         </div>
 
-        {/* 방금 생성됨 알림 */}
+        {/* 諛⑷툑 ?앹꽦???뚮┝ */}
         {justCreated && (
           <div className="mb-4 rounded bg-green-50 p-3 text-sm text-green-800">
-            프로젝트가 생성되었어요.
+            ?꾨줈?앺듃媛 ?앹꽦?섏뿀?댁슂.
           </div>
         )}
 
-        {/* 준비기관 뷰 */}
+        {/* 以鍮꾧린愿 酉?*/}
         {session.user.role === "ORGANIZER" && (
           <>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
-                내 프로젝트 ({projects.length})
+                ???꾨줈?앺듃 ({projects.length})
               </h2>
               <Link
                 href="/projects/new"
                 className="rounded bg-black px-4 py-2 text-sm text-white"
               >
-                + 새 프로젝트
+                + ???꾨줈?앺듃
               </Link>
             </div>
 
             {projects.length === 0 ? (
               <div className="rounded-lg bg-white p-8 text-center shadow">
                 <p className="mb-4 text-gray-600">
-                  아직 만든 프로젝트가 없어요.
+                  ?꾩쭅 留뚮뱺 ?꾨줈?앺듃媛 ?놁뼱??
                 </p>
                 <Link
                   href="/projects/new"
                   className="inline-block rounded bg-black px-4 py-2 text-sm text-white"
                 >
-                  첫 프로젝트 만들기
+                  泥??꾨줈?앺듃 留뚮뱾湲?
                 </Link>
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                {projects.map((project) => (
+                {projects.map((project: ProjectCardData) => (
                   <ProjectCard
                     key={project.id}
                     project={project}
@@ -181,25 +123,25 @@ export default async function DashboardPage({
           </>
         )}
 
-        {/* 참여자 뷰 */}
+        {/* 李몄뿬??酉?*/}
         {session.user.role === "PARTICIPANT" && (
           <>
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              참여 중인 답사 ({projects.length})
+              李몄뿬 以묒씤 ?듭궗 ({projects.length})
             </h2>
 
             {projects.length === 0 ? (
               <div className="rounded-lg bg-white p-8 text-center shadow">
                 <p className="text-gray-600">
-                  아직 초대받은 답사가 없어요.
+                  ?꾩쭅 珥덈?諛쏆? ?듭궗媛 ?놁뼱??
                 </p>
                 <p className="mt-2 text-sm text-gray-500">
-                  준비기관에서 초대 링크를 받으면 여기에 표시돼요.
+                  以鍮꾧린愿?먯꽌 珥덈? 留곹겕瑜?諛쏆쑝硫??ш린???쒖떆?쇱슂.
                 </p>
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                {projects.map((project) => (
+                {projects.map((project: ProjectCardData) => (
                   <ProjectCard
                     key={project.id}
                     project={project}
@@ -215,7 +157,17 @@ export default async function DashboardPage({
   );
 }
 
-// 프로젝트 카드 컴포넌트 (같은 파일 안에 둠)
+type ProjectCardData = {
+  id: string;
+  title: string;
+  description: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: string;
+  _count: { sites: number; members?: number };
+};
+
+// ?꾨줈?앺듃 移대뱶 而댄룷?뚰듃 (媛숈? ?뚯씪 ?덉뿉 ??
 function ProjectCard({
   project,
   role,
@@ -233,10 +185,10 @@ function ProjectCard({
 }) {
   const statusLabel =
     project.status === "DRAFT"
-      ? "준비 중"
+      ? "以鍮?以?
       : project.status === "PUBLISHED"
-      ? "공개"
-      : "완료";
+      ? "怨듦컻"
+      : "?꾨즺";
 
   const statusColor =
     project.status === "DRAFT"
@@ -264,9 +216,9 @@ function ProjectCard({
       )}
 
       <div className="flex gap-3 text-xs text-gray-500">
-        <span>답사지 {project._count.sites}개</span>
+        <span>?듭궗吏 {project._count.sites}媛?/span>
         {role === "ORGANIZER" && project._count.members !== undefined && (
-          <span>참여자 {project._count.members}명</span>
+          <span>李몄뿬??{project._count.members}紐?/span>
         )}
         {project.startDate && (
           <span>
@@ -278,314 +230,660 @@ function ProjectCard({
   );
 }
 
-===== app/globals.css =====
+=====  =====
 
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
+=====  =====
 
+===== .\app\projects\new\NewProjectForm.tsx =====
+"use client";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+import { useActionState } from "react";
+import Link from "next/link";
+import { createProject } from "../actions";
+
+export default function NewProjectForm() {
+  const [state, formAction, pending] = useActionState(createProject, null);
+
+  return (
+    <form action={formAction} className="space-y-4">
+      {state?.error && (
+        <div className="rounded bg-red-50 p-3 text-sm text-red-800">
+          {state.error}
+        </div>
+      )}
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-900">
+          ?꾨줈?앺듃 ?쒕ぉ <span className="text-red-500">*</span>
+        </label>
+        <input
+          name="title"
+          type="text"
+          required
+          maxLength={100}
+          placeholder="?? 2026 遊?寃쎌＜ ?듭궗"
+          className="w-full rounded border px-3 py-2 text-gray-900"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-900">
+          ?듭궗 媛쒖슂
+        </label>
+        <textarea
+          name="description"
+          rows={4}
+          maxLength={1000}
+          placeholder="?듭궗 紐⑹쟻, 二쇱젣 ?깆쓣 媛꾨떒???곸뼱二쇱꽭??
+          className="w-full rounded border px-3 py-2 text-gray-900"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-900">
+            ?쒖옉??          </label>
+          <input
+            name="startDate"
+            type="date"
+            className="w-full rounded border px-3 py-2 text-gray-900"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-900">
+            醫낅즺??          </label>
+          <input
+            name="endDate"
+            type="date"
+            className="w-full rounded border px-3 py-2 text-gray-900"
+          />
+        </div>
+      </div>
+
+      <div className="rounded bg-blue-50 p-3 text-sm text-blue-900">
+        ?꾨줈?앺듃瑜?留뚮뱺 ???듭궗吏쨌?쇱젙쨌?댁꽕??異붽??섍퀬 李몄뿬?먮? 珥덈??????덉뼱??
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Link
+          href="/dashboard"
+          className="rounded border px-4 py-2 text-sm text-gray-700"
+        >
+          痍⑥냼
+        </Link>
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+        >
+          {pending ? "留뚮뱶??以?.." : "?꾨줈?앺듃 留뚮뱾湲?}
+        </button>
+      </div>
+    </form>
+  );
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+===== .\app\projects\new\page.tsx =====
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import NewProjectForm from "./NewProjectForm";
+
+export default async function NewProjectPage() {
+  const session = await getSession();
+
+  // 濡쒓렇?????덉쑝硫?濡쒓렇???섏씠吏濡?
+  if (!session) {
+    redirect("/sign-in");
+  }
+
+  // ORGANIZER媛 ?꾨땲硫???쒕낫?쒕줈 (李몄뿬?먮뒗 ???섏씠吏 ?묎렐 遺덇?)
+  if (session.user.role !== "ORGANIZER") {
+    redirect("/dashboard");
+  }
+
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-2xl px-4">
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="text-sm text-gray-600 hover:underline"
+          >
+            ????쒕낫?쒕줈
+          </Link>
+        </div>
+
+        <div className="rounded-lg bg-white p-8 shadow">
+          <h1 className="mb-6 text-2xl font-bold text-gray-900">
+            ???듭궗 ?꾨줈?앺듃
+          </h1>
+
+          <NewProjectForm />
+        </div>
+      </div>
+    </div>
+  );
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-}
+=====  =====
 
-===== app/invite/[token]/actions.ts =====
+=====  =====
 
+=====  =====
+
+=====  =====
+
+===== .\app\projects\actions.ts =====
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/session";
-import { acceptInvitationSchema } from "@/lib/validations";
+import { createProjectSchema } from "@/lib/validations";
+import { revalidatePath } from "next/cache";
+import { isProjectOrganizer } from "@/lib/permissions";
+import { updateProjectSchema } from "@/lib/validations";
 
-export async function acceptInvitation(input: { token: string }) {
+export async function createProject(
+  _prevState: { error?: string } | null,
+  formData: FormData
+) {
+  // 1. ?몄쬆 ?뺤씤
   const session = await requireAuth();
 
-  const parsed = acceptInvitationSchema.safeParse(input);
+  // 2. 沅뚰븳 ?뺤씤 - ORGANIZER留??앹꽦 媛??
+  if (session.user.role !== "ORGANIZER") {
+    return { error: "?듭궗 以鍮꾧린愿留??꾨줈?앺듃瑜?留뚮뱾 ???덉뼱?? };
+  }
+
+  // 3. ?낅젰媛??뚯떛 諛?寃利?
+  const raw = {
+    title: formData.get("title") as string,
+    description: (formData.get("description") as string) || undefined,
+    startDate: (formData.get("startDate") as string) || undefined,
+    endDate: (formData.get("endDate") as string) || undefined,
+  };
+
+  const parsed = createProjectSchema.safeParse(raw);
+  if (!parsed.success) {
+    // 泥?踰덉㎏ ?먮윭 硫붿떆吏 諛섑솚
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { title, description, startDate, endDate } = parsed.data;
+
+  // 4. DB?????
+  const project = await prisma.project.create({
+    data: {
+      title,
+      description,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      organizerId: session.user.id,
+      status: "DRAFT",
+    },
+  });
+
+  // 5. ??쒕낫?쒕줈 由щ떎?대젆??(?꾨줈?앺듃 紐⑸줉? 4-3?먯꽌 留뚮뱾 ?덉젙)
+  redirect(`/dashboard?created=${project.id}`);
+}
+
+
+export async function updateProject(input: {
+  projectId: string;
+  title: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const session = await requireAuth();
+
+  const parsed = updateProjectSchema.safeParse(input);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  // 초대 조회
-  const invitation = await prisma.invitation.findUnique({
-    where: { token: input.token },
-  });
-
-  if (!invitation) {
-    return { error: "존재하지 않는 초대예요" };
+  // 沅뚰븳 寃??- ???꾨줈?앺듃??organizer留??섏젙 媛??
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "?섏젙 沅뚰븳???놁뼱?? };
   }
 
-  // 상태 확인
-  if (invitation.status !== "PENDING") {
-    return { error: "이미 처리된 초대예요" };
-  }
-
-  // 만료 확인
-  if (new Date() > invitation.expiresAt) {
-    // 만료 상태로 업데이트해두면 다음부터 명확
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "EXPIRED" },
-    });
-    return { error: "만료된 초대예요" };
-  }
-
-  // 핵심 방어: 로그인한 사용자의 이메일이 초대 이메일과 일치하는가
-  const userEmail = session.user.email.toLowerCase();
-  if (userEmail !== invitation.email.toLowerCase()) {
-    return {
-      error: `이 초대는 ${invitation.email} 계정을 위한 거예요. 해당 이메일로 로그인해주세요.`,
-    };
-  }
-
-  // 이미 참가 중인지 확인
-  const existing = await prisma.projectMember.findUnique({
-    where: {
-      projectId_userId: {
-        projectId: invitation.projectId,
-        userId: session.user.id,
-      },
+  await prisma.project.update({
+    where: { id: input.projectId },
+    data: {
+      title: input.title,
+      description: input.description || null,
+      startDate: input.startDate ? new Date(input.startDate) : null,
+      endDate: input.endDate ? new Date(input.endDate) : null,
     },
   });
 
-  if (existing) {
-    // 이미 멤버면 초대 상태만 정리하고 통과
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "ACCEPTED" },
-    });
-    return { success: true, projectId: invitation.projectId };
-  }
-
-  // 참가 처리 (트랜잭션: 초대 상태 변경 + 멤버 추가를 원자적으로)
-  await prisma.$transaction([
-    prisma.projectMember.create({
-      data: {
-        projectId: invitation.projectId,
-        userId: session.user.id,
-      },
-    }),
-    prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "ACCEPTED" },
-    }),
-  ]);
-
+  revalidatePath(`/projects/${input.projectId}`);
   revalidatePath("/dashboard");
-  revalidatePath(`/projects/${invitation.projectId}`);
-
-  return { success: true, projectId: invitation.projectId };
+  return { success: true };
 }
 
-===== app/invite/[token]/page.tsx =====
+export async function deleteProject(input: { projectId: string }) {
+  const session = await requireAuth();
 
-import { getSession } from "@/lib/session";
-import prisma from "@/lib/prisma";
-import Link from "next/link";
-import AcceptInvitationButton from "@/components/AcceptInvitationButton";
+  // 沅뚰븳 寃??
+  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
+  if (!isOwner) {
+    return { error: "??젣 沅뚰븳???놁뼱?? };
+  }
 
-export default async function InvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
-  const session = await getSession();
-
-  // 초대 정보 조회 (프로젝트 정보 포함)
-  const invitation = await prisma.invitation.findUnique({
-    where: { token },
-    include: {
-      project: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          startDate: true,
-          endDate: true,
-          organizer: {
-            select: { name: true },
-          },
-          _count: {
-            select: { sites: true, members: true },
-          },
-        },
-      },
-    },
+  // ??젣 - Cascade ?ㅼ젙 ?뚮Ц???섏쐞 ?곗씠??sites, schedules, invitations, members)???먮룞 ??젣
+  await prisma.project.delete({
+    where: { id: input.projectId },
   });
 
-  // 초대 자체가 없거나 취소된 경우
-  if (!invitation) {
-    return (
-      <InvalidInvite message="존재하지 않거나 취소된 초대예요." />
-    );
-  }
+  revalidatePath("/dashboard");
+  return { success: true };
+}
 
-  // 만료
-  const isExpired = new Date() > invitation.expiresAt;
-  if (isExpired || invitation.status === "EXPIRED") {
-    return (
-      <InvalidInvite message="만료된 초대예요. 조직자에게 새 초대 링크를 요청하세요." />
-    );
-  }
+===== .\app\settings\page.tsx =====
+import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { getDeletionImpact } from "@/lib/account";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
+import Link from "next/link";
 
-  // 이미 수락된 초대
-  if (invitation.status === "ACCEPTED") {
-    return (
-      <InvalidInvite
-        message="이미 수락된 초대예요."
-        primaryAction={{
-          label: "대시보드로",
-          href: "/dashboard",
-        }}
-      />
-    );
-  }
+export default async function SettingsPage() {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
 
-  // 상황별 분기
-  const isLoggedIn = !!session;
-  const userEmail = session?.user.email.toLowerCase() || "";
-  const invitedEmail = invitation.email.toLowerCase();
-  const emailMatches = isLoggedIn && userEmail === invitedEmail;
+  const impact = await getDeletionImpact(session.user.id);
 
-  // 이미 멤버인지 확인 (로그인된 경우만)
-  let alreadyMember = false;
-  if (isLoggedIn) {
-    const member = await prisma.projectMember.findUnique({
-      where: {
-        projectId_userId: {
-          projectId: invitation.projectId,
-          userId: session.user.id,
-        },
-      },
+  return (
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="mx-auto max-w-2xl px-4">
+        <Link
+          href="/dashboard"
+          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
+        >
+          ????쒕낫??
+        </Link>
+
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <h1 className="mb-4 text-2xl font-bold text-gray-900">?ㅼ젙</h1>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-gray-500">?대쫫</span>
+              <span className="text-gray-900">{session.user.name}</span>
+            </div>
+            <div className="flex justify-between border-b pb-2">
+              <span className="text-gray-500">?대찓??/span>
+              <span className="text-gray-900">{session.user.email}</span>
+            </div>
+            <div className="flex justify-between pb-2">
+              <span className="text-gray-500">??븷</span>
+              <span className="text-gray-900">
+                {session.user.role === "ORGANIZER"
+                  ? "?듭궗 以鍮꾧린愿"
+                  : session.user.role === "PARTICIPANT"
+                  ? "?듭궗 李몄뿬??
+                  : "愿由ъ옄"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ?꾪뿕 援ъ뿭 - ?덊눜 */}
+        <div className="rounded-lg border border-red-200 bg-white p-6 shadow">
+          <h2 className="mb-2 text-lg font-semibold text-red-700">
+            ?뚯썝 ?덊눜
+          </h2>
+          <DeleteAccountSection
+            impact={{
+              ownedProjectCount: impact.ownedProjectCount,
+              affectedMembers: impact.affectedMembers,
+              joinedCount: impact.joinedCount,
+              ownedProjects: impact.ownedProjects.map((p) => ({
+                id: p.id,
+                title: p.title,
+                memberCount: p._count.members,
+              })),
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== .\app\sign-in\page.tsx =====
+import { Suspense } from "react";
+import SignInForm from "./SignInForm";
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <p className="text-gray-500">遺덈윭?ㅻ뒗 以?..</p>
+        </div>
+      }
+    >
+      <SignInForm />
+    </Suspense>
+  );
+}
+
+===== .\app\sign-in\SignInForm.tsx =====
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+
+export default function SignInForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    const { error } = await authClient.signIn.email({
+      email,
+      password,
     });
-    alreadyMember = !!member;
+
+    setIsLoading(false);
+
+    if (error) {
+      setError(error.message || "濡쒓렇?몄뿉 ?ㅽ뙣?덉뼱??);
+      return;
+    }
+
+    // 珥덈? ?먮쫫?대㈃ 珥덈? ?섏씠吏濡?
+    if (inviteToken) {
+      router.push(`/invite/${inviteToken}`);
+    } else {
+      router.push("/");
+    }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 py-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
-        <p className="mb-2 text-xs text-gray-500">답사 초대장</p>
-        <h1 className="mb-1 text-2xl font-bold text-gray-900">
-          {invitation.project.title}
-        </h1>
-        <p className="mb-4 text-sm text-gray-600">
-          {invitation.project.organizer.name} 님이 초대했어요
-        </p>
+        <h1 className="mb-2 text-2xl text-black font-bold">濡쒓렇??/h1>
 
-        {invitation.project.description && (
-          <p className="mb-4 text-sm text-gray-700">
-            {invitation.project.description}
+        {inviteToken && (
+          <p className="mb-4 text-sm text-blue-800">
+            濡쒓렇????珥덈?諛쏆? ?듭궗 ?섏씠吏濡??대룞?댁슂.
           </p>
         )}
 
-        <div className="mb-6 grid grid-cols-2 gap-2 text-xs text-gray-600">
-          <div className="rounded bg-gray-50 p-2">
-            답사지 {invitation.project._count.sites}곳
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm text-black font-medium">
+              ?대찓??
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded border px-3 py-2"
+            />
           </div>
-          <div className="rounded bg-gray-50 p-2">
-            참여자 {invitation.project._count.members}명
-          </div>
-        </div>
 
-        <div className="mb-4 rounded bg-blue-50 p-3 text-xs text-blue-900">
-          이 초대는 <strong>{invitation.email}</strong> 계정으로만
-          수락할 수 있어요.
-        </div>
+          <div>
+            <label className="mb-1 block text-sm text-black font-medium">
+              鍮꾨?踰덊샇
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded border px-3 py-2"
+            />
+          </div>
 
-        {/* 상황별 CTA */}
-        {alreadyMember ? (
-          <div className="space-y-2">
-            <div className="rounded bg-green-50 p-3 text-sm text-green-800">
-              이미 참여 중인 답사예요.
+          {error && (
+            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
+              {error}
             </div>
-            <Link
-              href={`/projects/${invitation.projectId}`}
-              className="block rounded bg-black py-2 text-center text-sm text-white"
-            >
-              프로젝트로 이동
-            </Link>
-          </div>
-        ) : !isLoggedIn ? (
-          <div className="space-y-2">
-            <Link
-              href={`/sign-up?invite=${token}&email=${encodeURIComponent(
-                invitation.email
-              )}`}
-              className="block rounded bg-black py-2 text-center text-sm text-white"
-            >
-              회원가입하고 참여
-            </Link>
-            <Link
-              href={`/sign-in?invite=${token}`}
-              className="block rounded border py-2 text-center text-sm text-gray-800"
-            >
-              이미 계정이 있어요
-            </Link>
-          </div>
-        ) : !emailMatches ? (
-          <div className="space-y-2">
-            <div className="rounded bg-yellow-50 p-3 text-sm text-yellow-800">
-              현재 <strong>{session.user.email}</strong> 계정으로 로그인
-              중이에요.
-              <br />
-              초대받은 계정으로 다시 로그인해주세요.
-            </div>
-            <Link
-              href={`/sign-in?invite=${token}`}
-              className="block rounded border py-2 text-center text-sm text-gray-800"
-            >
-              다른 계정으로 로그인
-            </Link>
-          </div>
-        ) : (
-          <AcceptInvitationButton token={token} />
-        )}
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
+          >
+            {isLoading ? "濡쒓렇??以?.." : "濡쒓렇??}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-black">
+          泥섏쓬?댁떊媛??{" "}
+          <a
+            href={
+              inviteToken ? `/sign-up?invite=${inviteToken}` : "/sign-up"
+            }
+            className="text-blue-600 underline"
+          >
+            ?뚯썝媛??
+          </a>
+        </p>
       </div>
     </div>
   );
 }
 
-// 유효하지 않은 초대용 화면
-function InvalidInvite({
-  message,
-  primaryAction,
-}: {
-  message: string;
-  primaryAction?: { label: string; href: string };
-}) {
+===== .\app\sign-up\page.tsx =====
+import { Suspense } from "react";
+import SignUpForm from "./SignUpForm";
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <p className="text-gray-500">遺덈윭?ㅻ뒗 以?..</p>
+        </div>
+      }
+    >
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+===== .\app\sign-up\SignUpForm.tsx =====
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+
+export default function SignUpForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const inviteToken = searchParams.get("invite");
+  const invitedEmail = searchParams.get("email");
+  const isInviteFlow = !!inviteToken;
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState(invitedEmail || "");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"ORGANIZER" | "PARTICIPANT">(
+    isInviteFlow ? "PARTICIPANT" : "PARTICIPANT"
+  );
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 珥덈? ?대찓?쇱씠 ?덉쑝硫??먮룞 ?낅젰
+  
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    const { error } = await authClient.signUp.email({
+      email,
+      password,
+      name,
+      role,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setError(error.message || "?뚯썝媛?낆뿉 ?ㅽ뙣?덉뼱??);
+      return;
+    }
+
+    // 珥덈? ?먮쫫?대㈃ 珥덈? ?섏씠吏濡? ?꾨땲硫?硫붿씤?쇰줈
+    if (inviteToken) {
+      router.push(`/invite/${inviteToken}`);
+    } else {
+      router.push("/");
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-4 text-xl font-bold text-gray-900">답사 초대장</h1>
-        <p className="mb-4 text-sm text-gray-700">{message}</p>
-        {primaryAction && (
-          <Link
-            href={primaryAction.href}
-            className="block rounded bg-black py-2 text-center text-sm text-white"
-          >
-            {primaryAction.label}
-          </Link>
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">?뚯썝媛??/h1>
+
+        {isInviteFlow && (
+          <p className="mb-6 text-sm text-blue-800">
+            珥덈?諛쏆? ?듭궗??李몄뿬?섎젮硫?怨꾩젙??留뚮뱾?댁＜?몄슂.
+          </p>
         )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 珥덈? ?먮쫫?먯꽑 ??븷 ?좏깮 ?④? (?먮룞 李몄뿬?? */}
+          {!isInviteFlow && (
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-900">
+                ?대뼸寃??쒕퉬?ㅻ? ?댁슜?섏떎 嫄닿???
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRole("PARTICIPANT")}
+                  className={`rounded border p-3 text-sm ${
+                    role === "PARTICIPANT"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700"
+                  }`}
+                >
+                  ?듭궗 李몄뿬??
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("ORGANIZER")}
+                  className={`rounded border p-3 text-sm ${
+                    role === "ORGANIZER"
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700"
+                  }`}
+                >
+                  ?듭궗 以鍮꾧린愿
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                {role === "PARTICIPANT"
+                  ? "珥덈?諛쏆? ?듭궗???쇱젙쨌?댁꽕??蹂닿퀬 李몄뿬?⑸땲??
+                  : "?듭궗瑜?湲고쉷?섍퀬 李몄뿬?먮? 珥덈??⑸땲??}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              ?대쫫
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full rounded border px-3 py-2 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              ?대찓??
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              readOnly={!!invitedEmail}
+              className="w-full rounded border px-3 py-2 text-gray-900 read-only:bg-gray-100"
+            />
+            {invitedEmail && (
+              <p className="mt-1 text-xs text-gray-500">
+                珥덈?諛쏆? ?대찓??二쇱냼?덉슂.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              鍮꾨?踰덊샇 (8???댁긽)
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full rounded border px-3 py-2 text-gray-900"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
+          >
+            {isLoading ? "泥섎━ 以?.." : "媛?낇븯湲?}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-gray-700">
+          ?대? 怨꾩젙???덉뼱??{" "}
+          <a
+            href={
+              inviteToken ? `/sign-in?invite=${inviteToken}` : "/sign-in"
+            }
+            className="text-blue-600 underline"
+          >
+            濡쒓렇??
+          </a>
+        </p>
       </div>
     </div>
   );
 }
 
-===== app/layout.tsx =====
-
+===== .\app\layout.tsx =====
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -601,8 +899,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "답사 SaaS",
-  description: "답사 준비기관과 참여자를 위한 답사 운영 플랫폼",
+  title: "?듭궗 SaaS",
+  description: "?듭궗 以鍮꾧린愿怨?李몄뿬?먮? ?꾪븳 ?듭궗 ?댁쁺 ?뚮옯??,
 };
 
 export default function RootLayout({
@@ -620,46 +918,8 @@ export default function RootLayout({
   );
 }
 
-===== app/map-test/page.tsx =====
-
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
-import NaverMap from "@/components/NaverMap";
-import Link from "next/link";
-
-export default async function MapTestPage() {
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="mx-auto max-w-4xl px-4">
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
-        >
-          ← 대시보드
-        </Link>
-
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h1 className="mb-4 text-xl font-bold text-gray-900">
-            네이버 지도 SDK 테스트
-          </h1>
-          <p className="mb-4 text-sm text-gray-600">
-            지도가 뜨고 서울시청 위치에 마커가 보이면 SDK 인증 성공입니다.
-            빈 화면이거나 인증 실패 메시지가 뜨면 Client ID 또는 웹 서비스 URL
-            등록을 확인하세요.
-          </p>
-          <NaverMap />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-===== app/page.tsx =====
-
-﻿"use client";
+===== .\app\page.tsx =====
+"use client";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -682,7 +942,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-6 text-2xl text-black font-bold">답사 SaaS</h1>
+        <h1 className="mb-6 text-2xl text-black font-bold">OnSite</h1>
 
         {session ? (
           <div>
@@ -718,1319 +978,7 @@ export default function Home() {
   );
 }
 
-===== app/projects/[id]/actions.ts =====
-
-"use server";
-
-import { revalidatePath } from "next/cache";
-import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/session";
-import { isProjectOrganizer } from "@/lib/permissions";
-import {
-  createSiteSchema,
-  updateSiteSchema,
-  createScheduleSchema,
-  updateScheduleSchema,
-  createInvitationsSchema,
-} from "@/lib/validations";
-
-export async function createSite(input: {
-  projectId: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  address?: string;
-}) {
-  // 1. 인증
-  const session = await requireAuth();
-
-  // 2. Zod 검증
-  const parsed = createSiteSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  // 3. 권한 검사 - 이 프로젝트의 organizer만 답사지 추가 가능
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "이 프로젝트의 답사지를 추가할 권한이 없어요" };
-  }
-
-  // 4. 현재 답사지 개수 확인 (orderIndex 자동 할당용)
-  const count = await prisma.site.count({
-    where: { projectId: input.projectId },
-  });
-
-  // 5. DB에 저장
-  const site = await prisma.site.create({
-    data: {
-      projectId: input.projectId,
-      name: input.name,
-      latitude: input.latitude,
-      longitude: input.longitude,
-      address: input.address || null,
-      orderIndex: count, // 마지막 순서로 추가
-    },
-  });
-
-  // 6. 캐시 무효화 - 프로젝트 페이지 다시 렌더링되게
-  revalidatePath(`/projects/${input.projectId}`);
-
-  return { success: true, siteId: site.id };
-}
-export async function deleteSite(input: { siteId: string; projectId: string }) {
-  const session = await requireAuth();
-
-  // 권한 - organizer만 삭제 가능
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "삭제 권한이 없어요" };
-  }
-
-  // 삭제 대상 답사지가 진짜 이 프로젝트 소속인지 확인 (파라미터 조작 방어)
-  const site = await prisma.site.findUnique({
-    where: { id: input.siteId },
-  });
-  if (!site || site.projectId !== input.projectId) {
-    return { error: "답사지를 찾을 수 없어요" };
-  }
-
-  // 삭제 + 이후 답사지 orderIndex 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
-  await prisma.$transaction([
-    prisma.site.delete({
-      where: { id: input.siteId },
-    }),
-    prisma.site.updateMany({
-      where: {
-        projectId: input.projectId,
-        orderIndex: { gt: site.orderIndex },
-      },
-      data: {
-        orderIndex: { decrement: 1 },
-      },
-    }),
-  ]);
-
-  revalidatePath(`/projects/${input.projectId}`);
-  return { success: true };
-}
-
-
-export async function reorderSite(input: {
-  siteId: string;
-  projectId: string;
-  direction: "up" | "down";
-}) {
-  const session = await requireAuth();
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "권한이 없어요" };
-  }
-
-  // 이동 대상 답사지 조회
-  const current = await prisma.site.findUnique({
-    where: { id: input.siteId },
-  });
-  if (!current || current.projectId !== input.projectId) {
-    return { error: "답사지를 찾을 수 없어요" };
-  }
-
-  // 위로 = orderIndex - 1인 답사지와 자리 바꿈
-  // 아래로 = orderIndex + 1인 답사지와 자리 바꿈
-  const targetIndex =
-    input.direction === "up"
-      ? current.orderIndex - 1
-      : current.orderIndex + 1;
-
-  const neighbor = await prisma.site.findFirst({
-    where: {
-      projectId: input.projectId,
-      orderIndex: targetIndex,
-    },
-  });
-  if (!neighbor) {
-    return { error: "더 이동할 수 없어요" }; // 맨 위/아래
-  }
-
-  // 두 답사지의 orderIndex를 서로 바꿈 (트랜잭션)
-  await prisma.$transaction([
-    prisma.site.update({
-      where: { id: current.id },
-      data: { orderIndex: targetIndex },
-    }),
-    prisma.site.update({
-      where: { id: neighbor.id },
-      data: { orderIndex: current.orderIndex },
-    }),
-  ]);
-
-  revalidatePath(`/projects/${input.projectId}`);
-  return { success: true };
-}
-
-export async function updateSite(input: {
-  siteId: string;
-  projectId: string;
-  name: string;
-  description?: string;
-}) {
-  const session = await requireAuth();
-
-  const parsed = updateSiteSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "수정 권한이 없어요" };
-  }
-
-  // IDOR 방어 - 이 답사지가 진짜 이 프로젝트 소속인지 확인
-  const site = await prisma.site.findUnique({
-    where: { id: input.siteId },
-  });
-  if (!site || site.projectId !== input.projectId) {
-    return { error: "답사지를 찾을 수 없어요" };
-  }
-
-  await prisma.site.update({
-    where: { id: input.siteId },
-    data: {
-      name: input.name,
-      description: input.description || null,
-    },
-  });
-
-  revalidatePath(`/projects/${input.projectId}`);
-  revalidatePath(`/projects/${input.projectId}/sites/${input.siteId}`);
-  return { success: true };
-}
-export async function createSchedule(input: {
-  projectId: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  siteId?: string;
-}) {
-  const session = await requireAuth();
-
-  const parsed = createScheduleSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "일정 추가 권한이 없어요" };
-  }
-
-  // 시각 논리 검증 - 시작 < 종료
-  if (input.startTime >= input.endTime) {
-    return { error: "종료 시각은 시작 시각보다 늦어야 해요" };
-  }
-
-  // siteId가 있으면 이 프로젝트 소속인지 확인 (IDOR 방어)
-  if (input.siteId) {
-    const site = await prisma.site.findUnique({
-      where: { id: input.siteId },
-    });
-    if (!site || site.projectId !== input.projectId) {
-      return { error: "연결할 답사지가 이 프로젝트에 없어요" };
-    }
-  }
-
-  // orderIndex - 같은 날짜의 마지막 일정 다음 순서
-  const count = await prisma.schedule.count({
-    where: {
-      projectId: input.projectId,
-      date: new Date(input.date),
-    },
-  });
-
-  await prisma.schedule.create({
-    data: {
-      projectId: input.projectId,
-      title: input.title,
-      date: new Date(input.date),
-      startTime: input.startTime,
-      endTime: input.endTime,
-      siteId: input.siteId || null,
-      orderIndex: count,
-    },
-  });
-
-  revalidatePath(`/projects/${input.projectId}`);
-  return { success: true };
-}
-
-export async function updateSchedule(input: {
-  scheduleId: string;
-  projectId: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  siteId?: string;
-}) {
-  const session = await requireAuth();
-
-  const parsed = updateScheduleSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "수정 권한이 없어요" };
-  }
-
-  if (input.startTime >= input.endTime) {
-    return { error: "종료 시각은 시작 시각보다 늦어야 해요" };
-  }
-
-  // IDOR 방어 - 이 일정이 진짜 이 프로젝트 소속인지
-  const schedule = await prisma.schedule.findUnique({
-    where: { id: input.scheduleId },
-  });
-  if (!schedule || schedule.projectId !== input.projectId) {
-    return { error: "일정을 찾을 수 없어요" };
-  }
-
-  // siteId도 프로젝트 소속 확인
-  if (input.siteId) {
-    const site = await prisma.site.findUnique({
-      where: { id: input.siteId },
-    });
-    if (!site || site.projectId !== input.projectId) {
-      return { error: "연결할 답사지가 이 프로젝트에 없어요" };
-    }
-  }
-
-  // 날짜가 바뀐 경우 orderIndex 처리
-  const oldDate = new Date(schedule.date).toISOString().split("T")[0];
-  const newDate = input.date;
-
-  if (oldDate !== newDate) {
-    // 새 날짜의 마지막 순서로 재배치
-    const countInNewDate = await prisma.schedule.count({
-      where: {
-        projectId: input.projectId,
-        date: new Date(newDate),
-      },
-    });
-
-    // 원래 날짜의 빈 자리 메우기 + 새 날짜로 이동을 한 트랜잭션으로 묶어 원자성 보장
-    await prisma.$transaction([
-      prisma.schedule.updateMany({
-        where: {
-          projectId: input.projectId,
-          date: schedule.date,
-          orderIndex: { gt: schedule.orderIndex },
-        },
-        data: {
-          orderIndex: { decrement: 1 },
-        },
-      }),
-      prisma.schedule.update({
-        where: { id: input.scheduleId },
-        data: {
-          title: input.title,
-          date: new Date(newDate),
-          startTime: input.startTime,
-          endTime: input.endTime,
-          siteId: input.siteId || null,
-          orderIndex: countInNewDate,
-        },
-      }),
-    ]);
-  } else {
-    // 날짜가 그대로면 orderIndex 유지, 나머지만 업데이트
-    await prisma.schedule.update({
-      where: { id: input.scheduleId },
-      data: {
-        title: input.title,
-        startTime: input.startTime,
-        endTime: input.endTime,
-        siteId: input.siteId || null,
-      },
-    });
-  }
-
-  revalidatePath(`/projects/${input.projectId}`);
-  return { success: true };
-}
-
-export async function deleteSchedule(input: {
-  scheduleId: string;
-  projectId: string;
-}) {
-  const session = await requireAuth();
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "삭제 권한이 없어요" };
-  }
-
-  const schedule = await prisma.schedule.findUnique({
-    where: { id: input.scheduleId },
-  });
-  if (!schedule || schedule.projectId !== input.projectId) {
-    return { error: "일정을 찾을 수 없어요" };
-  }
-
-  // 삭제 + 같은 날짜 뒤 순서 앞당기기를 한 트랜잭션으로 묶어 원자성 보장
-  await prisma.$transaction([
-    prisma.schedule.delete({
-      where: { id: input.scheduleId },
-    }),
-    prisma.schedule.updateMany({
-      where: {
-        projectId: input.projectId,
-        date: schedule.date,
-        orderIndex: { gt: schedule.orderIndex },
-      },
-      data: {
-        orderIndex: { decrement: 1 },
-      },
-    }),
-  ]);
-
-  revalidatePath(`/projects/${input.projectId}`);
-  return { success: true };
-}
-
-export async function createInvitations(input: {
-  projectId: string;
-  emails: string[];
-}) {
-  const session = await requireAuth();
-
-  // 이메일 정규화 (소문자화 + 공백 제거 + 중복 제거)
-  const normalizedEmails = Array.from(
-    new Set(
-      input.emails
-        .map((e) => e.trim().toLowerCase())
-        .filter((e) => e.length > 0)
-    )
-  );
-
-  const parsed = createInvitationsSchema.safeParse({
-    projectId: input.projectId,
-    emails: normalizedEmails,
-  });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "초대 권한이 없어요" };
-  }
-
-  // 이미 이 프로젝트에 PENDING 초대가 있는 이메일 필터링 (중복 초대 방지)
-  const existingInvitations = await prisma.invitation.findMany({
-    where: {
-      projectId: input.projectId,
-      email: { in: normalizedEmails },
-      status: "PENDING",
-    },
-    select: { email: true },
-  });
-  const existingEmails = new Set(existingInvitations.map((i) => i.email));
-
-  // 이미 참가한 사용자도 제외
-  const existingMembers = await prisma.projectMember.findMany({
-    where: {
-      projectId: input.projectId,
-      user: { email: { in: normalizedEmails } },
-    },
-    select: { user: { select: { email: true } } },
-  });
-  const memberEmails = new Set(existingMembers.map((m) => m.user.email));
-
-  const toInvite = normalizedEmails.filter(
-    (email) => !existingEmails.has(email) && !memberEmails.has(email)
-  );
-
-  if (toInvite.length === 0) {
-    return { error: "모든 이메일이 이미 초대되었거나 참여 중이에요" };
-  }
-
-  // 14일 후 만료
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 14);
-
-  await prisma.invitation.createMany({
-    data: toInvite.map((email) => ({
-      projectId: input.projectId,
-      email,
-      expiresAt,
-    })),
-  });
-
-  revalidatePath(`/projects/${input.projectId}`);
-
-  const skipped = normalizedEmails.length - toInvite.length;
-  return {
-    success: true,
-    created: toInvite.length,
-    skipped,
-  };
-}
-
-export async function cancelInvitation(input: {
-  invitationId: string;
-  projectId: string;
-}) {
-  const session = await requireAuth();
-
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "권한이 없어요" };
-  }
-
-  // IDOR 방어
-  const invitation = await prisma.invitation.findUnique({
-    where: { id: input.invitationId },
-  });
-  if (!invitation || invitation.projectId !== input.projectId) {
-    return { error: "초대를 찾을 수 없어요" };
-  }
-
-  if (invitation.status !== "PENDING") {
-    return { error: "이미 처리된 초대는 취소할 수 없어요" };
-  }
-
-  await prisma.invitation.delete({
-    where: { id: input.invitationId },
-  });
-
-  revalidatePath(`/projects/${input.projectId}`);
-  return { success: true };
-}
-
-===== app/projects/[id]/edit/page.tsx =====
-
-import { getSession } from "@/lib/session";
-import { redirect, notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
-import { isProjectOrganizer } from "@/lib/permissions";
-import EditProjectForm from "@/components/EditProjectForm";
-import Link from "next/link";
-
-export default async function EditProjectPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-
-  const { id } = await params;
-
-  // 편집 권한 확인 - organizer만
-  const canEdit = await isProjectOrganizer(session.user.id, id);
-  if (!canEdit) notFound();
-
-  const project = await prisma.project.findUnique({
-    where: { id },
-  });
-  if (!project) notFound();
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="mx-auto max-w-2xl px-4">
-        <Link
-          href={`/projects/${id}`}
-          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
-        >
-          ← 프로젝트로
-        </Link>
-
-        <div className="rounded-lg bg-white p-8 shadow">
-          <h1 className="mb-6 text-2xl font-bold text-gray-900">
-            프로젝트 수정
-          </h1>
-
-          <EditProjectForm
-            project={{
-              id: project.id,
-              title: project.title,
-              description: project.description,
-              startDate: project.startDate,
-              endDate: project.endDate,
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-===== app/projects/[id]/page.tsx =====
-
-import { getSession } from "@/lib/session";
-import { redirect, notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
-import { canAccessProject, isProjectOrganizer } from "@/lib/permissions";
-import SiteRegisterMap from "@/components/SiteRegisterMap";
-import Link from "next/link";
-import SiteList from "@/components/SiteList";
-import ScheduleSection from "@/components/ScheduleSection";
-import InvitationManager from "@/components/InvitationManager";
-
-export default async function ProjectPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-
-  const { id } = await params;
-
-  const hasAccess = await canAccessProject(session.user.id, id);
-  if (!hasAccess) notFound();
-
-  const project = await prisma.project.findUnique({
-  where: { id },
-  include: {
-    sites: {
-      orderBy: { orderIndex: "asc" },
-    },
-    schedules: {
-      orderBy: [{ date: "asc" }, { orderIndex: "asc" }],
-      include: {
-        site: { select: { id: true, name: true } },
-      },
-    },
-    invitations: {
-      orderBy: { createdAt: "desc" },
-    },
-    members: {
-      orderBy: { joinedAt: "asc" },
-      include: {
-        user: {
-          select: { name: true, email: true },
-        },
-      },
-    },
-  },
-});
-
-  if (!project) notFound();
-
-  const canEdit = await isProjectOrganizer(session.user.id, id);
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="mx-auto max-w-5xl px-4">
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
-        >
-          ← 대시보드
-        </Link>
-
-        {/* 프로젝트 헤더 */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <div className="mb-2 flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-              {project.status === "DRAFT"
-                ? "준비 중"
-                : project.status === "PUBLISHED"
-                ? "공개"
-                : "완료"}
-            </span>
-          </div>
-          {project.description && (
-            <p className="mb-3 text-sm text-gray-700">{project.description}</p>
-          )}
-          {canEdit && (
-            <Link
-              href={`/projects/${project.id}/edit`}
-              className="rounded border px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              수정
-            </Link>
-          )}
-        </div>
-
-        {/* 답사지 등록 UI (organizer만) */}
-        {canEdit && (
-          <div className="mb-6 rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              답사지 추가
-            </h2>
-            <SiteRegisterMap projectId={project.id} />
-          </div>
-        )}
-
-        {/* 등록된 답사지 목록 */}
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            등록된 답사지 ({project.sites.length})
-          </h2>
-          답사지를 누르면 해설을 작성할 수 있습니다.
-          <SiteList
-            sites={project.sites}
-            projectId={project.id}
-            canEdit={canEdit}
-          />
-        </div>
-
-      
-        {/* 일정 섹션 */}
-        <div className="mt-6">
-          <ScheduleSection
-            projectId={project.id}
-            sites={project.sites.map((s) => ({ id: s.id, name: s.name }))}
-            schedules={project.schedules}
-            canEdit={canEdit}
-          />
-        </div>
-        {/* 초대 관리 (organizer만) */}
-        {canEdit && (
-          <div className="mt-6">
-            <InvitationManager
-              projectId={project.id}
-              invitations={project.invitations.map((inv) => ({
-                ...inv,
-                daysLeft: Math.ceil(
-                  (new Date(inv.expiresAt).getTime() - Date.now()) /
-                    (1000 * 60 * 60 * 24)
-                ),
-              }))}
-              members={project.members}
-            />
-          </div>
-      )}
-      </div>
-    </div>
-  );
-}
-
-
-===== app/projects/[id]/sites/[siteId]/page.tsx =====
-
-import { getSession } from "@/lib/session";
-import { redirect, notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
-import { canAccessProject, isProjectOrganizer } from "@/lib/permissions";
-import SiteEditor from "@/components/SiteEditor";
-import Link from "next/link";
-
-export default async function SitePage({
-  params,
-}: {
-  params: Promise<{ id: string; siteId: string }>;
-}) {
-  const session = await getSession();
-  if (!session) redirect("/sign-in");
-
-  const { id: projectId, siteId } = await params;
-
-  // 프로젝트 접근 권한
-  const hasAccess = await canAccessProject(session.user.id, projectId);
-  if (!hasAccess) notFound();
-
-  // 답사지 조회 + 프로젝트 소속 확인 (IDOR 방어)
-  const site = await prisma.site.findUnique({
-    where: { id: siteId },
-    include: {
-      project: {
-        select: { title: true, id: true },
-      },
-    },
-  });
-
-  if (!site || site.projectId !== projectId) notFound();
-
-  // 편집 권한
-  const canEdit = await isProjectOrganizer(session.user.id, projectId);
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="mx-auto max-w-3xl px-4">
-        <Link
-          href={`/projects/${projectId}`}
-          className="mb-4 inline-block text-sm text-gray-600 hover:underline"
-        >
-          ← {site.project.title}
-        </Link>
-
-        <SiteEditor
-          site={{
-            id: site.id,
-            projectId: site.projectId,
-            name: site.name,
-            description: site.description,
-            address: site.address,
-            latitude: site.latitude,
-            longitude: site.longitude,
-          }}
-          canEdit={canEdit}
-        />
-      </div>
-    </div>
-  );
-}
-
-===== app/projects/actions.ts =====
-
-"use server";
-
-import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/session";
-import { createProjectSchema } from "@/lib/validations";
-
-import { revalidatePath } from "next/cache";
-import { isProjectOrganizer } from "@/lib/permissions";
-import { updateProjectSchema } from "@/lib/validations";
-
-export async function createProject(
-  _prevState: { error?: string } | null,
-  formData: FormData
-) {
-  // 1. 인증 확인
-  const session = await requireAuth();
-
-  // 2. 권한 확인 - ORGANIZER만 생성 가능
-  if (session.user.role !== "ORGANIZER") {
-    return { error: "답사 준비기관만 프로젝트를 만들 수 있어요" };
-  }
-
-  // 3. 입력값 파싱 및 검증
-  const raw = {
-    title: formData.get("title") as string,
-    description: (formData.get("description") as string) || undefined,
-    startDate: (formData.get("startDate") as string) || undefined,
-    endDate: (formData.get("endDate") as string) || undefined,
-  };
-
-  const parsed = createProjectSchema.safeParse(raw);
-  if (!parsed.success) {
-    // 첫 번째 에러 메시지 반환
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const { title, description, startDate, endDate } = parsed.data;
-
-  // 4. DB에 저장
-  const project = await prisma.project.create({
-    data: {
-      title,
-      description,
-      startDate: startDate ? new Date(startDate) : null,
-      endDate: endDate ? new Date(endDate) : null,
-      organizerId: session.user.id,
-      status: "DRAFT",
-    },
-  });
-
-  // 5. 대시보드로 리다이렉트 (프로젝트 목록은 4-3에서 만들 예정)
-  redirect(`/dashboard?created=${project.id}`);
-}
-
-// 기존 createProject 함수는 그대로 둠
-
-export async function updateProject(input: {
-  projectId: string;
-  title: string;
-  description?: string;
-  startDate?: string;
-  endDate?: string;
-}) {
-  const session = await requireAuth();
-
-  const parsed = updateProjectSchema.safeParse(input);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  // 권한 검사 - 이 프로젝트의 organizer만 수정 가능
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "수정 권한이 없어요" };
-  }
-
-  await prisma.project.update({
-    where: { id: input.projectId },
-    data: {
-      title: input.title,
-      description: input.description || null,
-      startDate: input.startDate ? new Date(input.startDate) : null,
-      endDate: input.endDate ? new Date(input.endDate) : null,
-    },
-  });
-
-  revalidatePath(`/projects/${input.projectId}`);
-  revalidatePath("/dashboard");
-  return { success: true };
-}
-
-export async function deleteProject(input: { projectId: string }) {
-  const session = await requireAuth();
-
-  // 권한 검사
-  const isOwner = await isProjectOrganizer(session.user.id, input.projectId);
-  if (!isOwner) {
-    return { error: "삭제 권한이 없어요" };
-  }
-
-  // 삭제 - Cascade 설정 때문에 하위 데이터(sites, schedules, invitations, members)도 자동 삭제
-  await prisma.project.delete({
-    where: { id: input.projectId },
-  });
-
-  revalidatePath("/dashboard");
-  return { success: true };
-}
-
-===== app/projects/new/NewProjectForm.tsx =====
-
-"use client";
-
-import { useActionState } from "react";
-import Link from "next/link";
-import { createProject } from "../actions";
-
-export default function NewProjectForm() {
-  const [state, formAction, pending] = useActionState(createProject, null);
-
-  return (
-    <form action={formAction} className="space-y-4">
-      {state?.error && (
-        <div className="rounded bg-red-50 p-3 text-sm text-red-800">
-          {state.error}
-        </div>
-      )}
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-900">
-          프로젝트 제목 <span className="text-red-500">*</span>
-        </label>
-        <input
-          name="title"
-          type="text"
-          required
-          maxLength={100}
-          placeholder="예: 2026 봄 경주 답사"
-          className="w-full rounded border px-3 py-2 text-gray-900"
-        />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-900">
-          답사 개요
-        </label>
-        <textarea
-          name="description"
-          rows={4}
-          maxLength={1000}
-          placeholder="답사 목적, 주제 등을 간단히 적어주세요"
-          className="w-full rounded border px-3 py-2 text-gray-900"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">
-            시작일
-          </label>
-          <input
-            name="startDate"
-            type="date"
-            className="w-full rounded border px-3 py-2 text-gray-900"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-900">
-            종료일
-          </label>
-          <input
-            name="endDate"
-            type="date"
-            className="w-full rounded border px-3 py-2 text-gray-900"
-          />
-        </div>
-      </div>
-
-      <div className="rounded bg-blue-50 p-3 text-sm text-blue-900">
-        프로젝트를 만든 뒤 답사지·일정·해설을 추가하고 참여자를 초대할 수 있어요.
-      </div>
-
-      <div className="flex gap-2 pt-2">
-        <Link
-          href="/dashboard"
-          className="rounded border px-4 py-2 text-sm text-gray-700"
-        >
-          취소
-        </Link>
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          {pending ? "만드는 중..." : "프로젝트 만들기"}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-
-===== app/projects/new/page.tsx =====
-
-import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import NewProjectForm from "./NewProjectForm";
-
-export default async function NewProjectPage() {
-  const session = await getSession();
-
-  // 로그인 안 했으면 로그인 페이지로
-  if (!session) {
-    redirect("/sign-in");
-  }
-
-  // ORGANIZER가 아니면 대시보드로 (참여자는 이 페이지 접근 불가)
-  if (session.user.role !== "ORGANIZER") {
-    redirect("/dashboard");
-  }
-
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="mx-auto max-w-2xl px-4">
-        <div className="mb-6">
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-600 hover:underline"
-          >
-            ← 대시보드로
-          </Link>
-        </div>
-
-        <div className="rounded-lg bg-white p-8 shadow">
-          <h1 className="mb-6 text-2xl font-bold text-gray-900">
-            새 답사 프로젝트
-          </h1>
-
-          <NewProjectForm />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-===== app/sign-in/page.tsx =====
-
-"use client";
-
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
-
-export default function SignInPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const inviteToken = searchParams.get("invite");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-    });
-
-    setIsLoading(false);
-
-    if (error) {
-      setError(error.message || "로그인에 실패했어요");
-      return;
-    }
-
-    // 초대 흐름이면 초대 페이지로
-    if (inviteToken) {
-      router.push(`/invite/${inviteToken}`);
-    } else {
-      router.push("/");
-    }
-  }
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-2 text-2xl text-black font-bold">로그인</h1>
-
-        {inviteToken && (
-          <p className="mb-4 text-sm text-blue-800">
-            로그인 후 초대받은 답사 페이지로 이동해요.
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm text-black font-medium">
-              이메일
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded border px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-black font-medium">
-              비밀번호
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded border px-3 py-2"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
-          >
-            {isLoading ? "로그인 중..." : "로그인"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-black">
-          처음이신가요?{" "}
-          <a
-            href={
-              inviteToken ? `/sign-up?invite=${inviteToken}` : "/sign-up"
-            }
-            className="text-blue-600 underline"
-          >
-            회원가입
-          </a>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-===== app/sign-up/page.tsx =====
-
-"use client";
-
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
-
-export default function SignUpPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const inviteToken = searchParams.get("invite");
-  const invitedEmail = searchParams.get("email");
-  const isInviteFlow = !!inviteToken;
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState(invitedEmail || "");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"ORGANIZER" | "PARTICIPANT">(
-    isInviteFlow ? "PARTICIPANT" : "PARTICIPANT"
-  );
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  // 초대 이메일이 있으면 자동 입력
-  
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    const { error } = await authClient.signUp.email({
-      email,
-      password,
-      name,
-      role,
-    });
-
-    setIsLoading(false);
-
-    if (error) {
-      setError(error.message || "회원가입에 실패했어요");
-      return;
-    }
-
-    // 초대 흐름이면 초대 페이지로, 아니면 메인으로
-    if (inviteToken) {
-      router.push(`/invite/${inviteToken}`);
-    } else {
-      router.push("/");
-    }
-  }
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">회원가입</h1>
-
-        {isInviteFlow && (
-          <p className="mb-6 text-sm text-blue-800">
-            초대받은 답사에 참여하려면 계정을 만들어주세요.
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 초대 흐름에선 역할 선택 숨김 (자동 참여자) */}
-          {!isInviteFlow && (
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-900">
-                어떻게 서비스를 이용하실 건가요?
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRole("PARTICIPANT")}
-                  className={`rounded border p-3 text-sm ${
-                    role === "PARTICIPANT"
-                      ? "border-black bg-black text-white"
-                      : "border-gray-300 bg-white text-gray-700"
-                  }`}
-                >
-                  답사 참여자
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("ORGANIZER")}
-                  className={`rounded border p-3 text-sm ${
-                    role === "ORGANIZER"
-                      ? "border-black bg-black text-white"
-                      : "border-gray-300 bg-white text-gray-700"
-                  }`}
-                >
-                  답사 준비기관
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-gray-500">
-                {role === "PARTICIPANT"
-                  ? "초대받은 답사의 일정·해설을 보고 참여합니다"
-                  : "답사를 기획하고 참여자를 초대합니다"}
-              </p>
-            </div>
-          )}
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-900">
-              이름
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded border px-3 py-2 text-gray-900"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-900">
-              이메일
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              readOnly={!!invitedEmail}
-              className="w-full rounded border px-3 py-2 text-gray-900 read-only:bg-gray-100"
-            />
-            {invitedEmail && (
-              <p className="mt-1 text-xs text-gray-500">
-                초대받은 이메일 주소예요.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-900">
-              비밀번호 (8자 이상)
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              className="w-full rounded border px-3 py-2 text-gray-900"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full rounded bg-black py-2 text-white disabled:opacity-50"
-          >
-            {isLoading ? "처리 중..." : "가입하기"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-700">
-          이미 계정이 있어요?{" "}
-          <a
-            href={
-              inviteToken ? `/sign-in?invite=${inviteToken}` : "/sign-in"
-            }
-            className="text-blue-600 underline"
-          >
-            로그인
-          </a>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-===== CLAUDE.md =====
-
-@AGENTS.md
-
-
-===== components/AcceptInvitationButton.tsx =====
-
+===== .\components\AcceptInvitationButton.tsx =====
 "use client";
 
 import { useState, useTransition } from "react";
@@ -2050,7 +998,7 @@ export default function AcceptInvitationButton({ token }: { token: string }) {
         setError(result.error);
         return;
       }
-      // 참가 성공 → 프로젝트로 이동
+      // 李멸? ?깃났 ???꾨줈?앺듃濡??대룞
       router.push(`/projects/${result.projectId}`);
     });
   }
@@ -2068,14 +1016,162 @@ export default function AcceptInvitationButton({ token }: { token: string }) {
         disabled={isPending}
         className="w-full rounded bg-black py-2 text-sm text-white disabled:opacity-50"
       >
-        {isPending ? "참여 중..." : "이 답사에 참여하기"}
+        {isPending ? "李몄뿬 以?.." : "???듭궗??李몄뿬?섍린"}
       </button>
     </div>
   );
 }
 
-===== components/EditProjectForm.tsx =====
+===== .\components\DeleteAccountSection.tsx =====
+"use client";
 
+import { useState, useTransition } from "react";
+import { authClient } from "@/lib/auth-client";
+
+interface DeleteImpact {
+  ownedProjectCount: number;
+  affectedMembers: number;
+  joinedCount: number;
+  ownedProjects: Array<{
+    id: string;
+    title: string;
+    memberCount: number;
+  }>;
+}
+
+export default function DeleteAccountSection({
+  impact,
+}: {
+  impact: DeleteImpact;
+}) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const hasImpact = impact.ownedProjectCount > 0;
+
+  function handleDelete() {
+    setError(null);
+    startTransition(async () => {
+      const { error } = await authClient.deleteUser();
+
+      if (error) {
+        setError(error.message || "?덊눜???ㅽ뙣?덉뼱??);
+        return;
+      }
+
+      // ?덊눜 ?깃났 ???덉쑝濡?
+      window.location.href = "/";
+    });
+  }
+
+  if (!showConfirm) {
+    return (
+      <div>
+        <p className="mb-4 text-sm text-gray-600">
+          ?덊눜?섎㈃ 怨꾩젙怨?愿?⑤맂 紐⑤뱺 ?곗씠?곌? ??젣?섎ŉ 蹂듦뎄?????놁뼱??
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowConfirm(true)}
+          className="rounded border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+        >
+          ?뚯썝 ?덊눜 吏꾪뻾
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* ??젣 ?곹뼢 ?붿빟 */}
+      <div className="rounded bg-red-50 p-4 text-sm">
+        <p className="mb-2 font-semibold text-red-800">
+          ?덊눜?섎㈃ ?ㅼ쓬 ?곗씠?곌? ?곴뎄 ??젣?⑸땲??
+        </p>
+        <ul className="space-y-1 text-red-700">
+          <li>???뚯썝?섏쓽 怨꾩젙 ?뺣낫</li>
+          {impact.ownedProjectCount > 0 && (
+            <li>
+              ???뚯썝?섏씠 留뚮뱺 ?꾨줈?앺듃 {impact.ownedProjectCount}媛?
+            </li>
+          )}
+          {impact.affectedMembers > 0 && (
+            <li>
+              ?????꾨줈?앺듃??李몄뿬 以묒씤 ?ㅻⅨ 李몄뿬??{impact.affectedMembers}紐낆쓽
+              李몄뿬 ?뺣낫
+            </li>
+          )}
+          {impact.joinedCount > 0 && (
+            <li>???뚯썝?섏씠 李몄뿬 以묒씤 ?듭궗 {impact.joinedCount}嫄댁쓽 李몄뿬 湲곕줉</li>
+          )}
+        </ul>
+      </div>
+
+      {/* ??젣???꾨줈?앺듃 紐⑸줉 */}
+      {hasImpact && (
+        <div className="rounded border p-3 text-sm">
+          <p className="mb-2 font-medium text-gray-900">
+            ??젣???꾨줈?앺듃:
+          </p>
+          <ul className="space-y-1 text-gray-600">
+            {impact.ownedProjects.map((p) => (
+              <li key={p.id}>
+                ??{p.title} (李몄뿬??{p.memberCount}紐?
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ?뺤씤 ?띿뒪???낅젰 */}
+      <div>
+        <label className="mb-1 block text-sm text-gray-700">
+          ?덊눜?섎젮硫??꾨옒??<strong>?덊눜?⑸땲??/strong>瑜??낅젰?섏꽭??
+        </label>
+        <input
+          type="text"
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder="?덊눜?⑸땲??
+          className="w-full rounded border px-3 py-2 text-sm text-gray-900"
+        />
+      </div>
+
+      {error && (
+        <div className="rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setShowConfirm(false);
+            setConfirmText("");
+            setError(null);
+          }}
+          disabled={isPending}
+          className="rounded border px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
+        >
+          痍⑥냼
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isPending || confirmText !== "?덊눜?⑸땲??}
+          className="rounded bg-red-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+        >
+          {isPending ? "?덊눜 泥섎━ 以?.." : "?곴뎄 ?덊눜"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+===== .\components\EditProjectForm.tsx =====
 "use client";
 
 import { useState, useTransition } from "react";
@@ -2090,7 +1186,7 @@ interface Project {
   endDate: Date | null;
 }
 
-// Date → YYYY-MM-DD 문자열 변환 (input type="date" 기본값용)
+// Date ??YYYY-MM-DD 臾몄옄??蹂??(input type="date" 湲곕낯媛믪슜)
 function dateToInputValue(date: Date | null): string {
   if (!date) return "";
   const d = new Date(date);
@@ -2133,7 +1229,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
 
   function handleDelete() {
     const confirmed = confirm(
-      `"${project.title}" 프로젝트를 삭제할까요?\n답사지·일정·초대 정보도 모두 삭제되고 복구할 수 없어요.`
+      `"${project.title}" ?꾨줈?앺듃瑜???젣?좉퉴??\n?듭궗吏쨌?쇱젙쨌珥덈? ?뺣낫??紐⑤몢 ??젣?섍퀬 蹂듦뎄?????놁뼱??`
     );
     if (!confirmed) return;
 
@@ -2154,7 +1250,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
     <form onSubmit={handleUpdate} className="space-y-4">
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-900">
-          프로젝트 제목 <span className="text-red-500">*</span>
+          ?꾨줈?앺듃 ?쒕ぉ <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -2168,7 +1264,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
 
       <div>
         <label className="mb-1 block text-sm font-medium text-gray-900">
-          답사 개요
+          ?듭궗 媛쒖슂
         </label>
         <textarea
           value={description}
@@ -2182,7 +1278,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-900">
-            시작일
+            ?쒖옉??
           </label>
           <input
             type="date"
@@ -2193,7 +1289,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-900">
-            종료일
+            醫낅즺??
           </label>
           <input
             type="date"
@@ -2217,7 +1313,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
           disabled={isPending}
           className="rounded border border-red-300 px-4 py-2 text-sm text-red-600 disabled:opacity-50"
         >
-          프로젝트 삭제
+          ?꾨줈?앺듃 ??젣
         </button>
 
         <div className="flex gap-2">
@@ -2226,14 +1322,14 @@ export default function EditProjectForm({ project }: { project: Project }) {
             onClick={() => router.push(`/projects/${project.id}`)}
             className="rounded border px-4 py-2 text-sm text-gray-700"
           >
-            취소
+            痍⑥냼
           </button>
           <button
             type="submit"
             disabled={isPending}
             className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
           >
-            {isPending ? "저장 중..." : "저장"}
+            {isPending ? "???以?.." : "???}
           </button>
         </div>
       </div>
@@ -2241,8 +1337,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
   );
 }
 
-===== components/InvitationManager.tsx =====
-
+===== .\components\InvitationManager.tsx =====
 "use client";
 
 import { useState, useTransition } from "react";
@@ -2281,7 +1376,7 @@ export default function InvitationManager({
   const [notice, setNotice] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  // 링크 도메인 (배포 후엔 vercel URL이 됨)
+  // 留곹겕 ?꾨찓??(諛고룷 ?꾩뿏 vercel URL????
   const baseUrl =
     typeof window !== "undefined" ? window.location.origin : "";
 
@@ -2290,14 +1385,14 @@ export default function InvitationManager({
     setError(null);
     setNotice(null);
 
-    // 개행/쉼표로 분리
+    // 媛쒗뻾/?쇳몴濡?遺꾨━
     const emails = emailsText
       .split(/[\n,]/)
       .map((s) => s.trim())
       .filter(Boolean);
 
     if (emails.length === 0) {
-      setError("이메일을 입력하세요");
+      setError("?대찓?쇱쓣 ?낅젰?섏꽭??);
       return;
     }
 
@@ -2314,8 +1409,8 @@ export default function InvitationManager({
 
       setEmailsText("");
       const parts: string[] = [];
-      if (result.created) parts.push(`${result.created}개 초대 생성`);
-      if (result.skipped) parts.push(`${result.skipped}개 건너뜀`);
+      if (result.created) parts.push(`${result.created}媛?珥덈? ?앹꽦`);
+      if (result.skipped) parts.push(`${result.skipped}媛?嫄대꼫?`);
       setNotice(parts.join(", "));
     });
   }
@@ -2329,7 +1424,7 @@ export default function InvitationManager({
   }
 
   function handleCancel(invitationId: string, email: string) {
-    if (!confirm(`${email}에 대한 초대를 취소할까요?`)) return;
+    if (!confirm(`${email}?????珥덈?瑜?痍⑥냼?좉퉴??`)) return;
     setError(null);
     setNotice(null);
     startTransition(async () => {
@@ -2343,13 +1438,13 @@ export default function InvitationManager({
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <h2 className="mb-4 text-lg font-semibold text-gray-900">
-        참여자 초대
+        李몄뿬??珥덈?
       </h2>
 
-      {/* 초대 이메일 입력 폼 */}
+      {/* 珥덈? ?대찓???낅젰 ??*/}
       <form onSubmit={handleInvite} className="mb-6 space-y-2">
         <label className="block text-sm font-medium text-gray-900">
-          이메일 (쉼표 또는 줄바꿈으로 여러 명)
+          ?대찓??(?쇳몴 ?먮뒗 以꾨컮轅덉쑝濡??щ윭 紐?
         </label>
         <textarea
           value={emailsText}
@@ -2360,14 +1455,14 @@ export default function InvitationManager({
         />
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            초대 링크는 14일간 유효합니다.
+            珥덈? 留곹겕??14?쇨컙 ?좏슚?⑸땲??
           </p>
           <button
             type="submit"
             disabled={isPending}
             className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-50"
           >
-            {isPending ? "생성 중..." : "초대 링크 만들기"}
+            {isPending ? "?앹꽦 以?.." : "珥덈? 留곹겕 留뚮뱾湲?}
           </button>
         </div>
 
@@ -2383,14 +1478,14 @@ export default function InvitationManager({
         )}
       </form>
 
-      {/* 대기 중인 초대 */}
+      {/* ?湲?以묒씤 珥덈? */}
       <div className="mb-6">
         <h3 className="mb-2 text-sm font-semibold text-gray-700">
-          발급된 초대 ({pendingInvitations.length})
+          諛쒓툒??珥덈? ({pendingInvitations.length})
         </h3>
         {pendingInvitations.length === 0 ? (
           <p className="text-xs text-gray-500">
-            아직 발급된 초대가 없어요.
+            ?꾩쭅 諛쒓툒??珥덈?媛 ?놁뼱??
           </p>
         ) : (
           <ul className="space-y-2">
@@ -2405,7 +1500,7 @@ export default function InvitationManager({
                   <div className="flex-1">
                     <p className="text-sm text-gray-900">{inv.email}</p>
                     <p className="text-xs text-gray-500">
-                      {inv.daysLeft > 0 ? `${inv.daysLeft}일 남음` : "만료됨"}
+                      {inv.daysLeft > 0 ? `${inv.daysLeft}???⑥쓬` : "留뚮즺??}
                     </p>
                   </div>
                   <button
@@ -2413,7 +1508,7 @@ export default function InvitationManager({
                     onClick={() => handleCopy(inv.token)}
                     className="rounded border px-2 py-1 text-xs text-gray-700"
                   >
-                    {isCopied ? "복사됨" : "링크 복사"}
+                    {isCopied ? "蹂듭궗?? : "留곹겕 蹂듭궗"}
                   </button>
                   <button
                     type="button"
@@ -2421,7 +1516,7 @@ export default function InvitationManager({
                     disabled={isPending}
                     className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
                   >
-                    취소
+                    痍⑥냼
                   </button>
                 </li>
               );
@@ -2430,14 +1525,14 @@ export default function InvitationManager({
         )}
       </div>
 
-      {/* 참가 완료 멤버 */}
+      {/* 李멸? ?꾨즺 硫ㅻ쾭 */}
       <div>
         <h3 className="mb-2 text-sm font-semibold text-gray-700">
-          참가 중인 참여자 ({members.length})
+          李멸? 以묒씤 李몄뿬??({members.length})
         </h3>
         {members.length === 0 ? (
           <p className="text-xs text-gray-500">
-            아직 참가한 참여자가 없어요.
+            ?꾩쭅 李멸???李몄뿬?먭? ?놁뼱??
           </p>
         ) : (
           <ul className="space-y-1">
@@ -2461,16 +1556,15 @@ export default function InvitationManager({
   );
 }
 
-===== components/NaverMap.tsx =====
-
+===== .\components\NaverMap.tsx =====
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 
-// TypeScript가 window.naver의 존재를 알도록 알려주는 선언
-// 네이버 지도 SDK는 전역 객체 window.naver로 붙기 때문에 필요
+// TypeScript媛 window.naver??議댁옱瑜??뚮룄濡??뚮젮二쇰뒗 ?좎뼵
+// ?ㅼ씠踰?吏??SDK???꾩뿭 媛앹껜 window.naver濡?遺숆린 ?뚮Ц???꾩슂
 declare global {
   interface Window {
 
@@ -2487,7 +1581,7 @@ interface NaverMapProps {
 }
 
 export default function NaverMap({
-  latitude = 37.5665, // 기본값: 서울시청 좌표
+  latitude = 37.5665, // 湲곕낯媛? ?쒖슱?쒖껌 醫뚰몴
   longitude = 126.978,
   zoom = 13,
   height = "400px",
@@ -2496,7 +1590,7 @@ export default function NaverMap({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // SDK 로드 완료 후 지도 초기화
+  // SDK 濡쒕뱶 ?꾨즺 ??吏??珥덇린??
   useEffect(() => {
     if (!isLoaded) return;
     if (!mapRef.current) return;
@@ -2507,17 +1601,17 @@ export default function NaverMap({
       zoom,
     });
 
-    // 지도 중앙에 테스트 마커
+    // 吏??以묒븰???뚯뒪??留덉빱
     new window.naver.maps.Marker({
       position: new window.naver.maps.LatLng(latitude, longitude),
       map,
-      title: "중심점",
+      title: "以묒떖??,
     });
 
-    // 인증 실패 시 콜백 등록
+    // ?몄쬆 ?ㅽ뙣 ??肄쒕갚 ?깅줉
     window.navermap_authFailure = () => {
       setError(
-        "네이버 지도 인증 실패. Client ID나 등록된 웹 서비스 URL을 확인하세요."
+        "?ㅼ씠踰?吏???몄쬆 ?ㅽ뙣. Client ID???깅줉?????쒕퉬??URL???뺤씤?섏꽭??"
       );
     };
   }, [isLoaded, latitude, longitude, zoom]);
@@ -2527,7 +1621,7 @@ export default function NaverMap({
   if (!clientId) {
     return (
       <div className="rounded bg-red-50 p-4 text-sm text-red-700">
-        NEXT_PUBLIC_NAVER_MAP_CLIENT_ID 환경변수가 설정되지 않았어요.
+        NEXT_PUBLIC_NAVER_MAP_CLIENT_ID ?섍꼍蹂?섍? ?ㅼ젙?섏? ?딆븯?댁슂.
       </div>
     );
   }
@@ -2538,7 +1632,7 @@ export default function NaverMap({
         strategy="afterInteractive"
         src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`}
         onReady={() => setIsLoaded(true)}
-        onError={() => setError("네이버 지도 SDK 로드 실패")}
+        onError={() => setError("?ㅼ씠踰?吏??SDK 濡쒕뱶 ?ㅽ뙣")}
       />
       {error && (
         <div className="mb-2 rounded bg-red-50 p-3 text-sm text-red-700">
@@ -2550,11 +1644,556 @@ export default function NaverMap({
   );
 }
 
-===== components/ScheduleSection.tsx =====
+===== .\components\ProjectMap.tsx =====
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
+import { getCurrentPosition } from "@/lib/geolocation";
+
+declare global {
+  interface Window {
+    naver: any;
+    navermap_authFailure?: () => void;
+  }
+}
+
+// ?쇱젙 ?쒖꽌?濡??뺣젹???듭궗吏 (留덉빱??
+interface RouteStop {
+  siteId: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface ProjectMapProps {
+  stops: RouteStop[];           // ?좏깮???좎쭨???쇱젙 ???듭궗吏
+  routePath?: number[][] | null; // 洹??좎쭨???꾨줈 寃쎈줈
+  height?: string;
+}
+
+export default function ProjectMap({
+  stops,
+  routePath,
+  height = "400px",
+}: ProjectMapProps) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const myLocationMarkerRef = useRef<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!mapContainerRef.current) return;
+    if (!window.naver) return;
+    if (stops.length === 0) return;
+
+    const bounds = new window.naver.maps.LatLngBounds();
+    stops.forEach((stop) => {
+      bounds.extend(new window.naver.maps.LatLng(stop.latitude, stop.longitude));
+    });
+
+    const map = new window.naver.maps.Map(mapContainerRef.current, {
+      center: bounds.getCenter(),
+      zoom: 10,
+    });
+    mapRef.current = map;
+
+    if (stops.length > 1) {
+      map.fitBounds(bounds);
+    }
+
+    // ?쇱젙 ?쒖꽌?濡?留덉빱 (stops媛 ?대? ?뺣젹????
+    stops.forEach((stop, index) => {
+      const position = new window.naver.maps.LatLng(
+        stop.latitude,
+        stop.longitude
+      );
+      new window.naver.maps.Marker({
+        position,
+        map,
+        icon: {
+          content: `
+            <div style="
+              width: 32px; height: 32px;
+              background: #111827; color: white;
+              border-radius: 50%;
+              display: flex; align-items: center; justify-content: center;
+              font-weight: bold; font-size: 14px;
+              border: 2px solid white;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            ">${index + 1}</div>
+          `,
+          anchor: new window.naver.maps.Point(16, 16),
+        },
+        title: `${index + 1}. ${stop.name}`,
+      });
+    });
+
+    // 寃쎈줈: ??λ맂 ?꾨줈 寃쎈줈 ?덉쑝硫??ㅼ꽑, ?놁쑝硫?吏곸꽑 ?먯꽑
+    if (routePath && routePath.length >= 2) {
+      const path = routePath.map(
+        (coord) => new window.naver.maps.LatLng(coord[1], coord[0])
+      );
+      new window.naver.maps.Polyline({
+        map,
+        path,
+        strokeColor: "#3b82f6",
+        strokeWeight: 5,
+        strokeOpacity: 0.8,
+      });
+    } else if (stops.length >= 2) {
+      const path = stops.map(
+        (s) => new window.naver.maps.LatLng(s.latitude, s.longitude)
+      );
+      new window.naver.maps.Polyline({
+        map,
+        path,
+        strokeColor: "#9ca3af",
+        strokeWeight: 2,
+        strokeOpacity: 0.5,
+        strokeStyle: "shortdash",
+      });
+    }
+
+    window.navermap_authFailure = () => {
+      setError("?ㅼ씠踰?吏???몄쬆 ?ㅽ뙣");
+    };
+  }, [isLoaded, stops, routePath]);
+
+  async function handleShowMyLocation() {
+    setError(null);
+    setLocating(true);
+    try {
+      const coords = await getCurrentPosition();
+      if (!mapRef.current || !window.naver) {
+        setError("吏?꾧? ?꾩쭅 以鍮꾨릺吏 ?딆븯?댁슂");
+        return;
+      }
+      const position = new window.naver.maps.LatLng(
+        coords.latitude,
+        coords.longitude
+      );
+      if (myLocationMarkerRef.current) {
+        myLocationMarkerRef.current.setMap(null);
+      }
+      myLocationMarkerRef.current = new window.naver.maps.Marker({
+        position,
+        map: mapRef.current,
+        icon: {
+          content: `
+            <div style="
+              width: 20px; height: 20px;
+              background: #2563eb;
+              border-radius: 50%;
+              border: 3px solid white;
+              box-shadow: 0 0 0 2px #2563eb, 0 2px 6px rgba(0,0,0,0.4);
+            "></div>
+          `,
+          anchor: new window.naver.maps.Point(10, 10),
+        },
+        title: "?꾩옱 ???꾩튂",
+        zIndex: 1000,
+      });
+      mapRef.current.setCenter(position);
+      mapRef.current.setZoom(15);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "?꾩튂瑜?媛?몄삤吏 紐삵뻽?댁슂");
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+
+  if (stops.length === 0) {
+    return (
+      <div className="rounded border bg-gray-50 p-8 text-center text-sm text-gray-500">
+        ???좎쭨?먮뒗 ?듭궗吏媛 ?곌껐???쇱젙???놁뼱??
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Script
+        strategy="afterInteractive"
+        src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}`}
+        onReady={() => setIsLoaded(true)}
+        onError={() => setError("?ㅼ씠踰?吏??SDK 濡쒕뱶 ?ㅽ뙣")}
+      />
+
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={handleShowMyLocation}
+          disabled={!isLoaded || locating}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          <span className="text-base">?뱧</span>
+          {locating ? "?꾩튂 ?뺤씤 以?.." : "???꾩튂"}
+        </button>
+        <span className="text-xs text-gray-500">
+          踰꾪듉???꾨Ⅴ硫??꾩옱 ?꾩튂媛 ?쒖떆?⑸땲??
+        </span>
+      </div>
+
+      {error && (
+        <div className="mb-2 rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div
+        ref={mapContainerRef}
+        style={{ width: "100%", height }}
+        className="rounded border"
+      />
+    </>
+  );
+}
+
+===== .\components\RouteControl.tsx =====
 "use client";
 
 import { useState, useTransition } from "react";
+import { updateProjectRoute } from "@/app/projects/[id]/actions";
+
+interface RouteControlProps {
+  projectId: string;
+  canEdit: boolean;
+  hasRoute: boolean;
+  routeIsStale: boolean;
+  distance: number | null;   // 誘명꽣
+  duration: number | null;   // 諛由ъ큹
+  siteCount: number;
+}
+
+export default function RouteControl({
+  projectId,
+  canEdit,
+  hasRoute,
+  routeIsStale,
+  distance,
+  duration,
+  siteCount,
+}: RouteControlProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleCalculate() {
+    setError(null);
+    startTransition(async () => {
+      const result = await updateProjectRoute({ projectId });
+      if (result.error) {
+        setError(result.error);
+      }
+    });
+  }
+
+  // 嫄곕━/?쒓컙 ?щ㎎
+  const distanceText = distance
+    ? distance >= 1000
+      ? `${(distance / 1000).toFixed(1)}km`
+      : `${distance}m`
+    : null;
+
+  const durationText = duration
+    ? (() => {
+        const totalMinutes = Math.round(duration / 1000 / 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return hours > 0 ? `${hours}?쒓컙 ${minutes}遺? : `${minutes}遺?;
+      })()
+    : null;
+
+  // ?듭궗吏 2媛?誘몃쭔?대㈃ 寃쎈줈 媛쒕뀗 ?놁쓬
+  if (siteCount < 2) {
+    return null;
+  }
+
+  return (
+    <div className="mb-3 rounded border bg-gray-50 p-3">
+      <div className="flex items-center justify-between">
+        <div>
+          {hasRoute ? (
+            <div className="flex gap-4 text-sm">
+              <span className="text-gray-900">
+                珥??대룞嫄곕━ <strong>{distanceText}</strong>
+              </span>
+              <span className="text-gray-900">
+                ?덉긽 ?뚯슂 <strong>{durationText}</strong>
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm text-gray-600">
+              ?꾩쭅 寃쎈줈媛 怨꾩궛?섏? ?딆븯?댁슂
+            </span>
+          )}
+        </div>
+
+        {canEdit && (
+          <button
+            type="button"
+            onClick={handleCalculate}
+            disabled={isPending}
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white disabled:opacity-50"
+          >
+            {isPending
+              ? "怨꾩궛 以?.."
+              : hasRoute
+              ? "寃쎈줈 ?ㅼ떆 怨꾩궛"
+              : "李⑤웾 寃쎈줈 怨꾩궛"}
+          </button>
+        )}
+      </div>
+
+      {/* ?≪쓬 寃쎄퀬 */}
+      {canEdit && routeIsStale && hasRoute && (
+        <div className="mt-2 rounded bg-yellow-50 p-2 text-xs text-yellow-800">
+          ?듭궗吏媛 蹂寃쎈릱?댁슂. 寃쎈줈瑜??ㅼ떆 怨꾩궛?댁＜?몄슂.
+        </div>
+      )}
+
+      {/* 李⑤웾 ?대룞 ?덈궡 (李몄뿬?먯슜) */}
+      {hasRoute && (
+        <p className="mt-2 text-xs text-gray-500">
+          李⑤웾 ?대룞 湲곗? ?덉긽移섏엯?덈떎. ?ㅼ젣 援먰넻?곹솴???곕씪 ?щ씪吏????덉뼱??
+        </p>
+      )}
+
+      {error && (
+        <div className="mt-2 rounded bg-red-50 p-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+===== .\components\RouteView.tsx =====
+"use client";
+
+import { useState, useTransition } from "react";
+import ProjectMap from "./ProjectMap";
+import { updateProjectRoute } from "@/app/projects/[id]/actions";
+
+interface RouteStop {
+  siteId: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  date: string; // "YYYY-MM-DD"
+}
+
+interface DateRoute {
+  path: number[][];
+  distance: number;
+  duration: number;
+}
+
+interface RouteViewProps {
+  projectId: string;
+  canEdit: boolean;
+  stops: RouteStop[];                        // ?꾩껜(?좎쭨 臾닿?) ?쇱젙???듭궗吏
+  routeData: Record<string, DateRoute> | null; // ?좎쭨蹂?寃쎈줈
+  routeIsStale: boolean;
+}
+
+interface RouteLeg {
+  distance: number;
+  duration: number;
+  fromName: string;
+  toName: string;
+}
+
+interface DateRoute {
+  path: number[][];
+  distance: number;
+  duration: number;
+  legs: RouteLeg[];
+}
+
+export default function RouteView({
+  projectId,
+  canEdit,
+  stops,
+  routeData,
+  routeIsStale,
+}: RouteViewProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // ?좎쭨蹂꾨줈 stops 洹몃９??
+  const dateKeys = Array.from(new Set(stops.map((s) => s.date))).sort();
+  const [activeDate, setActiveDate] = useState<string | null>(null);
+  const effectiveDate =
+    activeDate && dateKeys.includes(activeDate)
+      ? activeDate
+      : dateKeys[0] ?? null;
+
+  const activeStops = effectiveDate
+    ? stops.filter((s) => s.date === effectiveDate)
+    : [];
+  const activeRoute =
+    effectiveDate && routeData ? routeData[effectiveDate] ?? null : null;
+
+  function handleCalculate() {
+    setError(null);
+    startTransition(async () => {
+      const result = await updateProjectRoute({ projectId });
+      if (result.error) setError(result.error);
+    });
+  }
+
+  function fmtDistance(m: number) {
+    return m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${m}m`;
+  }
+  function fmtDuration(ms: number) {
+    const min = Math.round(ms / 60000);
+    const h = Math.floor(min / 60);
+    const r = min % 60;
+    return h > 0 ? `${h}?쒓컙 ${r}遺? : `${r}遺?;
+  }
+
+  function fmtDateLabel(key: string) {
+    return new Date(key).toLocaleDateString("ko-KR", {
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+    });
+  }
+
+  if (stops.length === 0) {
+    return (
+      <div className="rounded border bg-gray-50 p-6 text-center text-sm text-gray-500">
+        ?듭궗吏媛 ?곌껐???쇱젙???놁뼱?? ?쇱젙???듭궗吏瑜??곌껐?섎㈃ ?숈꽑??
+        ?쒖떆?⑸땲??
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* 寃쎈줈 怨꾩궛 踰꾪듉 + ?≪쓬 ?덈궡 */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          {routeData
+            ? "?좎쭨蹂??대룞 寃쎈줈?덉슂."
+            : "?꾩쭅 寃쎈줈媛 怨꾩궛?섏? ?딆븯?댁슂."}
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={handleCalculate}
+            disabled={isPending}
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white disabled:opacity-50"
+          >
+            {isPending
+              ? "怨꾩궛 以?.."
+              : routeData
+              ? "寃쎈줈 ?ㅼ떆 怨꾩궛"
+              : "李⑤웾 寃쎈줈 怨꾩궛"}
+          </button>
+        )}
+      </div>
+
+      {canEdit && routeIsStale && routeData && (
+        <div className="mb-3 rounded bg-yellow-50 p-2 text-xs text-yellow-800">
+          ?쇱젙?대굹 ?듭궗吏媛 蹂寃쎈릱?댁슂. 寃쎈줈瑜??ㅼ떆 怨꾩궛?댁＜?몄슂.
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-3 rounded bg-red-50 p-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* ?좎쭨 ??*/}
+      {dateKeys.length > 1 && (
+        <div className="mb-3 flex flex-wrap gap-1 border-b">
+          {dateKeys.map((key) => {
+            const isActive = key === effectiveDate;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveDate(key)}
+                className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+                  isActive
+                    ? "border-black font-medium text-gray-900"
+                    : "border-transparent text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {fmtDateLabel(key)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ?좏깮 ?좎쭨??嫄곕━쨌?쒓컙 */}
+      {activeRoute && (
+        <div className="mb-3 flex gap-4 text-sm">
+          <span className="text-gray-900">
+            ?대룞嫄곕━ <strong>{fmtDistance(activeRoute.distance)}</strong>
+          </span>
+          <span className="text-gray-900">
+            ?덉긽 ?뚯슂 <strong>{fmtDuration(activeRoute.duration)}</strong>
+          </span>
+        </div>
+      )}
+      {activeRoute && activeRoute.legs && activeRoute.legs.length > 0 && (
+        <div className="mb-3 rounded border border-gray-200 bg-gray-50 p-3">
+          <p className="mb-2 text-xs font-medium text-gray-700">援ш컙蹂??대룞</p>
+          <ul className="space-y-1">
+            {activeRoute.legs.map((leg, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between text-xs text-gray-600"
+              >
+                <span className="flex-1 truncate">
+                  {i + 1}.{leg.fromName} ??{leg.toName}
+                </span>
+                <span className="ml-2 shrink-0 text-gray-500">
+                  {fmtDistance(leg.distance)} 쨌 {fmtDuration(leg.duration)}
+                </span>
+               </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 吏??*/}
+      <ProjectMap
+        stops={activeStops.map((s) => ({
+          siteId: s.siteId,
+          name: s.name,
+          latitude: s.latitude,
+          longitude: s.longitude,
+        }))}
+        routePath={activeRoute?.path ?? null}
+        height="400px"
+      />
+
+      {activeRoute && (
+        <p className="mt-2 text-xs text-gray-500">
+          李⑤웾 ?대룞 湲곗? ?덉긽移섏엯?덈떎. ?ㅼ젣 援먰넻?곹솴???곕씪 ?щ씪吏????덉뼱??
+        </p>
+      )}
+    </div>
+  );
+}
+
+===== .\components\ScheduleSection.tsx =====
+"use client";
+
+import { useState, useTransition } from "react";
+import Link from "next/link";
 import {
   createSchedule,
   updateSchedule,
@@ -2574,10 +2213,7 @@ interface Schedule {
   endTime: string;
   orderIndex: number;
   siteId: string | null;
-  site: {
-    id: string;
-    name: string;
-  } | null;
+  site: { id: string; name: string } | null;
 }
 
 interface ScheduleSectionProps {
@@ -2587,13 +2223,36 @@ interface ScheduleSectionProps {
   canEdit: boolean;
 }
 
-// 날짜 → YYYY-MM-DD 문자열
-function dateToInputValue(date: Date): string {
+// Date ??"YYYY-MM-DD" (濡쒖뺄 湲곗?. UTC 蹂?????좎쭨 諛由?諛⑹?)
+function toDateKey(date: Date): string {
   const d = new Date(date);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+// "YYYY-MM-DD" ??"8??17??(??"
+function formatTabLabel(dateKey: string): string {
+  return new Date(dateKey).toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+}
+
+// ?좎쭨蹂?洹몃９??+ 媛??좎쭨 ?덉뿉???쒓컙???뺣젹(諛⑹뼱??
+function groupByDate(schedules: Schedule[]): Record<string, Schedule[]> {
+  const result: Record<string, Schedule[]> = {};
+  for (const s of schedules) {
+    const key = toDateKey(s.date);
+    if (!result[key]) result[key] = [];
+    result[key].push(s);
+  }
+  for (const key of Object.keys(result)) {
+    result[key].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }
+  return result;
 }
 
 export default function ScheduleSection({
@@ -2604,18 +2263,26 @@ export default function ScheduleSection({
 }: ScheduleSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeDate, setActiveDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // 날짜별 그룹핑
   const grouped = groupByDate(schedules);
   const dateKeys = Object.keys(grouped).sort();
+
+  // activeDate媛 鍮꾩뿀嫄곕굹 ?щ씪吏??좎쭨硫?泥??좎쭨濡??泥?
+  const effectiveDate =
+    activeDate && dateKeys.includes(activeDate)
+      ? activeDate
+      : dateKeys[0] ?? null;
+
+  const activeSchedules = effectiveDate ? grouped[effectiveDate] : [];
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
-          일정 ({schedules.length})
+          ?쇱젙 ({schedules.length})
         </h2>
         {canEdit && !isAdding && !editingId && (
           <button
@@ -2626,7 +2293,7 @@ export default function ScheduleSection({
             }}
             className="rounded bg-black px-3 py-1 text-sm text-white"
           >
-            + 일정 추가
+            + ?쇱젙 異붽?
           </button>
         )}
       </div>
@@ -2637,12 +2304,13 @@ export default function ScheduleSection({
         </div>
       )}
 
-      {/* 추가 폼 */}
+      {/* 異붽? ??- ?꾩옱 ?좏깮???좎쭨瑜?湲곕낯媛믪쑝濡?*/}
       {isAdding && canEdit && (
         <ScheduleForm
           projectId={projectId}
           sites={sites}
           mode="create"
+          defaultDate={effectiveDate ?? ""}
           onDone={() => setIsAdding(false)}
           onError={setError}
           isPending={isPending}
@@ -2650,117 +2318,135 @@ export default function ScheduleSection({
         />
       )}
 
-      {/* 일정 목록 */}
       {schedules.length === 0 ? (
         <p className="text-sm text-gray-600">
           {canEdit
-            ? "일정을 추가하면 여기에 표시돼요."
-            : "아직 등록된 일정이 없어요."}
+            ? "?쇱젙??異붽??섎㈃ ?ш린???쒖떆?쇱슂."
+            : "?꾩쭅 ?깅줉???쇱젙???놁뼱??"}
         </p>
       ) : (
-        <div className="space-y-4">
-          {dateKeys.map((dateKey) => (
-            <div key={dateKey}>
-              <h3 className="mb-2 text-sm font-semibold text-gray-700">
-                {formatDate(dateKey)}
-              </h3>
-              <ol className="space-y-1">
-                {grouped[dateKey].map((schedule) => {
-                  const isEditingThis = editingId === schedule.id;
+        <>
+          {/* ?좎쭨 ??*/}
+          <div className="mb-4 flex flex-wrap gap-1 border-b">
+            {dateKeys.map((dateKey) => {
+              const isActive = dateKey === effectiveDate;
+              return (
+                <button
+                  key={dateKey}
+                  type="button"
+                  onClick={() => setActiveDate(dateKey)}
+                  className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+                    isActive
+                      ? "border-black font-medium text-gray-900"
+                      : "border-transparent text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  {formatTabLabel(dateKey)}
+                  <span className="ml-1 text-xs text-gray-400">
+                    ({grouped[dateKey].length})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-                  if (isEditingThis) {
-                    return (
-                      <li key={schedule.id}>
-                        <ScheduleForm
-                          projectId={projectId}
-                          sites={sites}
-                          mode="edit"
-                          initialData={{
-                            scheduleId: schedule.id,
-                            title: schedule.title,
-                            date: dateToInputValue(schedule.date),
-                            startTime: schedule.startTime,
-                            endTime: schedule.endTime,
-                            siteId: schedule.siteId || "",
-                          }}
-                          onDone={() => setEditingId(null)}
-                          onError={setError}
-                          isPending={isPending}
-                          startTransition={startTransition}
-                        />
-                      </li>
-                    );
-                  }
+          {/* ?좏깮???좎쭨???쇱젙留?*/}
+          <ol className="space-y-1">
+            {activeSchedules.map((schedule) => {
+              const isEditingThis = editingId === schedule.id;
 
-                  return (
-                    <li
-                      key={schedule.id}
-                      className="flex items-center gap-3 rounded border border-gray-200 p-3"
-                    >
-                      <div className="w-24 shrink-0 text-xs text-gray-500">
-                        {schedule.startTime} – {schedule.endTime}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {schedule.title}
-                        </p>
-                        {schedule.site && (
-                          <p className="text-xs text-blue-600">
-                            → {schedule.site.name}
-                          </p>
-                        )}
-                      </div>
-                      {canEdit && (
-                        <div className="flex shrink-0 gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingId(schedule.id);
-                              setError(null);
-                            }}
-                            disabled={isPending || isAdding}
-                            className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
-                          >
-                            수정
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (
-                                !confirm(
-                                  `"${schedule.title}" 일정을 삭제할까요?`
-                                )
-                              )
-                                return;
-                              setError(null);
-                              startTransition(async () => {
-                                const result = await deleteSchedule({
-                                  scheduleId: schedule.id,
-                                  projectId,
-                                });
-                                if (result.error) setError(result.error);
-                              });
-                            }}
-                            disabled={isPending}
-                            className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
-          ))}
-        </div>
+              if (isEditingThis) {
+                return (
+                  <li key={schedule.id}>
+                    <ScheduleForm
+                      projectId={projectId}
+                      sites={sites}
+                      mode="edit"
+                      initialData={{
+                        scheduleId: schedule.id,
+                        title: schedule.title,
+                        date: toDateKey(schedule.date),
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        siteId: schedule.siteId || "",
+                      }}
+                      onDone={() => setEditingId(null)}
+                      onError={setError}
+                      isPending={isPending}
+                      startTransition={startTransition}
+                    />
+                  </li>
+                );
+              }
+
+              return (
+                <li
+                  key={schedule.id}
+                  className="flex items-center gap-3 rounded border border-gray-200 p-3"
+                >
+                  <div className="w-24 shrink-0 text-xs text-gray-500">
+                    {schedule.startTime} ??{schedule.endTime}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {schedule.title}
+                    </p>
+                    {schedule.site && (
+                      <Link
+                        href={`/projects/${projectId}/sites/${schedule.site.id}`}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        ??{schedule.site.name}
+                      </Link>
+                    )}
+                  </div>
+                  {canEdit && (
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(schedule.id);
+                          setError(null);
+                        }}
+                        disabled={isPending || isAdding}
+                        className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
+                      >
+                        ?섏젙
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            !confirm(`"${schedule.title}" ?쇱젙????젣?좉퉴??`)
+                          )
+                            return;
+                          setError(null);
+                          startTransition(async () => {
+                            const result = await deleteSchedule({
+                              scheduleId: schedule.id,
+                              projectId,
+                            });
+                            if (result.error) setError(result.error);
+                          });
+                        }}
+                        disabled={isPending}
+                        className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
+                      >
+                        ??젣
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
     </div>
   );
 }
 
-// 폼 서브 컴포넌트 (create/edit 공용)
+// ?? ??(create/edit 怨듭슜) ??
 interface ScheduleFormProps {
   projectId: string;
   sites: Site[];
@@ -2773,6 +2459,7 @@ interface ScheduleFormProps {
     endTime: string;
     siteId: string;
   };
+  defaultDate?: string;
   onDone: () => void;
   onError: (msg: string | null) => void;
   isPending: boolean;
@@ -2784,13 +2471,14 @@ function ScheduleForm({
   sites,
   mode,
   initialData,
+  defaultDate,
   onDone,
   onError,
   isPending,
   startTransition,
 }: ScheduleFormProps) {
   const [title, setTitle] = useState(initialData?.title || "");
-  const [date, setDate] = useState(initialData?.date || "");
+  const [date, setDate] = useState(initialData?.date || defaultDate || "");
   const [startTime, setStartTime] = useState(initialData?.startTime || "");
   const [endTime, setEndTime] = useState(initialData?.endTime || "");
   const [siteId, setSiteId] = useState(initialData?.siteId || "");
@@ -2827,7 +2515,6 @@ function ScheduleForm({
         onError(result.error);
         return;
       }
-
       onDone();
     });
   }
@@ -2839,7 +2526,7 @@ function ScheduleForm({
     >
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-900">
-          제목 <span className="text-red-500">*</span>
+          ?쒕ぉ <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -2847,7 +2534,7 @@ function ScheduleForm({
           onChange={(e) => setTitle(e.target.value)}
           required
           maxLength={100}
-          placeholder="예: 근정전 답사, 점심 식사, 버스 이동"
+          placeholder="?? 洹쇱젙???듭궗, ?먯떖 ?앹궗, 踰꾩뒪 ?대룞"
           className="w-full rounded border px-3 py-2 text-sm text-gray-900"
         />
       </div>
@@ -2855,7 +2542,7 @@ function ScheduleForm({
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-900">
-            날짜 <span className="text-red-500">*</span>
+            ?좎쭨 <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -2867,7 +2554,7 @@ function ScheduleForm({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-900">
-            시작 <span className="text-red-500">*</span>
+            ?쒖옉 <span className="text-red-500">*</span>
           </label>
           <input
             type="time"
@@ -2879,7 +2566,7 @@ function ScheduleForm({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-900">
-            종료 <span className="text-red-500">*</span>
+            醫낅즺 <span className="text-red-500">*</span>
           </label>
           <input
             type="time"
@@ -2893,14 +2580,14 @@ function ScheduleForm({
 
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-900">
-          연결할 답사지 (선택)
+          ?곌껐???듭궗吏 (?좏깮)
         </label>
         <select
           value={siteId}
           onChange={(e) => setSiteId(e.target.value)}
           className="w-full rounded border px-3 py-2 text-sm text-gray-900"
         >
-          <option value="">답사지 없음 (자유 일정)</option>
+          <option value="">?듭궗吏 ?놁쓬 (?먯쑀 ?쇱젙)</option>
           {sites.map((site) => (
             <option key={site.id} value={site.id}>
               {site.name}
@@ -2916,43 +2603,21 @@ function ScheduleForm({
           disabled={isPending}
           className="rounded border px-3 py-1 text-sm text-gray-700 disabled:opacity-50"
         >
-          취소
+          痍⑥냼
         </button>
         <button
           type="submit"
           disabled={isPending}
           className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-50"
         >
-          {isPending ? "저장 중..." : "저장"}
+          {isPending ? "???以?.." : "???}
         </button>
       </div>
     </form>
   );
 }
 
-// 헬퍼
-function groupByDate(schedules: Schedule[]): Record<string, Schedule[]> {
-  const result: Record<string, Schedule[]> = {};
-  for (const s of schedules) {
-    const key = new Date(s.date).toISOString().split("T")[0];
-    if (!result[key]) result[key] = [];
-    result[key].push(s);
-  }
-  return result;
-}
-
-function formatDate(dateKey: string): string {
-  const d = new Date(dateKey);
-  return d.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  });
-}
-
-===== components/SiteEditor.tsx =====
-
+===== .\components\SiteEditor.tsx =====
 "use client";
 
 import { useState, useTransition } from "react";
@@ -2985,7 +2650,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
 
   function handleSave() {
     if (!name.trim()) {
-      setError("이름을 입력하세요");
+      setError("?대쫫???낅젰?섏꽭??);
       return;
     }
 
@@ -3004,12 +2669,12 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
       }
 
       setIsEditing(false);
-      router.refresh(); // 서버에서 다시 데이터 가져오게
+      router.refresh(); // ?쒕쾭?먯꽌 ?ㅼ떆 ?곗씠??媛?몄삤寃?
     });
   }
 
   function handleCancel() {
-    // 원래 값으로 되돌리기
+    // ?먮옒 媛믪쑝濡??섎룎由ш린
     setName(site.name);
     setDescription(site.description || "");
     setError(null);
@@ -3018,17 +2683,17 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
-      {/* 위치 정보 - 항상 표시 */}
+      {/* ?꾩튂 ?뺣낫 - ??긽 ?쒖떆 */}
       <div className="mb-4 border-b pb-4">
         {site.address && (
           <p className="text-sm text-gray-600">{site.address}</p>
         )}
         <p className="text-xs text-gray-400">
-          위도 {site.latitude.toFixed(6)} · 경도 {site.longitude.toFixed(6)}
+          ?꾨룄 {site.latitude.toFixed(6)} 쨌 寃쎈룄 {site.longitude.toFixed(6)}
         </p>
       </div>
 
-      {/* 조회 모드 */}
+      {/* 議고쉶 紐⑤뱶 */}
       {!isEditing && (
         <>
           <div className="mb-4 flex items-start justify-between">
@@ -3039,7 +2704,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
                 onClick={() => setIsEditing(true)}
                 className="rounded border px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
               >
-                해설 편집
+                ?댁꽕 ?몄쭛
               </button>
             )}
           </div>
@@ -3053,19 +2718,19 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
           ) : (
             <p className="text-sm text-gray-500">
               {canEdit
-                ? "아직 해설이 없어요. '해설 편집'을 눌러 작성해보세요."
-                : "아직 해설이 없어요."}
+                ? "?꾩쭅 ?댁꽕???놁뼱?? '?댁꽕 ?몄쭛'???뚮윭 ?묒꽦?대낫?몄슂."
+                : "?꾩쭅 ?댁꽕???놁뼱??"}
             </p>
           )}
         </>
       )}
 
-      {/* 편집 모드 */}
+      {/* ?몄쭛 紐⑤뱶 */}
       {isEditing && (
         <>
           <div className="mb-4">
             <label className="mb-1 block text-sm font-medium text-gray-900">
-              답사지 이름 <span className="text-red-500">*</span>
+              ?듭궗吏 ?대쫫 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -3079,7 +2744,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-900">
-                해설 (마크다운 형식으로 작성해주세요. ex. **굵게**, *기울임*, [링크](https://...))
+                ?댁꽕 (留덊겕?ㅼ슫 ?뺤떇?쇰줈 ?묒꽦?댁＜?몄슂. ex. **援듦쾶**, *湲곗슱??, [留곹겕](https://...))
               </label>
               <div className="flex gap-1 text-xs">
                 <button
@@ -3091,7 +2756,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
                       : "border text-gray-700"
                   }`}
                 >
-                  편집
+                  ?몄쭛
                 </button>
                 <button
                   type="button"
@@ -3102,7 +2767,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
                       : "border text-gray-700"
                   }`}
                 >
-                  미리보기
+                  誘몃━蹂닿린
                 </button>
               </div>
             </div>
@@ -3113,15 +2778,15 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={16}
                 maxLength={10000}
-                placeholder={`마크다운 문법 예시:
-## 소제목
-**굵게** *기울임* [링크](https://...)
-- 목록 항목
-- 다른 항목
+                placeholder={`留덊겕?ㅼ슫 臾몃쾿 ?덉떆:
+## ?뚯젣紐?
+**援듦쾶** *湲곗슱?? [留곹겕](https://...)
+- 紐⑸줉 ??ぉ
+- ?ㅻⅨ ??ぉ
 
-| 연대 | 사건 |
+| ?곕? | ?ш굔 |
 | --- | --- |
-| 1395 | 경복궁 창건 |`}
+| 1395 | 寃쎈났沅?李쎄굔 |`}
                 className="w-full rounded border px-3 py-2 font-mono text-sm text-gray-900"
               />
             ) : (
@@ -3134,7 +2799,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400">
-                    미리볼 내용이 없어요
+                    誘몃━蹂??댁슜???놁뼱??
                   </p>
                 )}
               </div>
@@ -3158,7 +2823,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
               disabled={isPending}
               className="rounded border px-4 py-2 text-sm text-gray-700 disabled:opacity-50"
             >
-              취소
+              痍⑥냼
             </button>
             <button
               type="button"
@@ -3166,7 +2831,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
               disabled={isPending}
               className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
             >
-              {isPending ? "저장 중..." : "저장"}
+              {isPending ? "???以?.." : "???}
             </button>
           </div>
         </>
@@ -3175,8 +2840,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
   );
 }
 
-===== components/SiteList.tsx =====
-
+===== .\components\SiteList.tsx =====
 "use client";
 
 import { useState, useTransition } from "react";
@@ -3204,7 +2868,7 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   function handleDelete(siteId: string, name: string) {
-    if (!confirm(`"${name}" 답사지를 삭제할까요?`)) return;
+    if (!confirm(`"${name}" ?듭궗吏瑜???젣?좉퉴??`)) return;
 
     setError(null);
     setPendingId(siteId);
@@ -3229,8 +2893,8 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
     return (
       <p className="text-sm text-gray-600">
         {canEdit
-          ? "위에서 첫 답사지를 검색해 추가해보세요."
-          : "아직 등록된 답사지가 없어요."}
+          ? "?꾩뿉??泥??듭궗吏瑜?寃?됲빐 異붽??대낫?몄슂."
+          : "?꾩쭅 ?깅줉???듭궗吏媛 ?놁뼱??"}
       </p>
     );
   }
@@ -3249,6 +2913,19 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
           const isLast = index === sites.length - 1;
           const isThisPending = pendingId === site.id && isPending;
 
+          // ?듭궗吏 ?뺣낫 釉붾줉 (?대쫫 + 二쇱냼 + 醫뚰몴)
+          const siteInfo = (
+            <>
+              <h3 className="font-medium text-gray-900">{site.name}</h3>
+              {site.address && (
+                <p className="text-xs text-gray-500">{site.address}</p>
+              )}
+              <p className="text-xs text-gray-400">
+                {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
+              </p>
+            </>
+          );
+
           return (
             <li
               key={site.id}
@@ -3258,21 +2935,32 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
                 {index + 1}
               </span>
 
-              <div className="flex-1">
+              {/* 議곗쭅?? ?대쫫留?留곹겕 / 李몄뿬?? ?뺣낫 釉붾줉 ?꾩껜 留곹겕 */}
+              {canEdit ? (
+                <div className="flex-1">
+                  <Link
+                    href={`/projects/${projectId}/sites/${site.id}`}
+                    className="font-medium text-gray-900 hover:underline"
+                  >
+                    {site.name}
+                  </Link>
+                  {site.address && (
+                    <p className="text-xs text-gray-500">{site.address}</p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
+                  </p>
+                </div>
+              ) : (
                 <Link
                   href={`/projects/${projectId}/sites/${site.id}`}
-                  className="font-medium text-gray-900 hover:underline"
+                  className="flex-1 rounded hover:bg-gray-50"
                 >
-                  {site.name}
+                  {siteInfo}
                 </Link>
-                {site.address && (
-                  <p className="text-xs text-gray-500">{site.address}</p>
-                )}
-                <p className="text-xs text-gray-400">
-                  {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
-                </p>
-              </div>
+              )}
 
+              {/* ?몄쭛 踰꾪듉 (議곗쭅?먮쭔) */}
               {canEdit && (
                 <div className="flex shrink-0 gap-1">
                   <button
@@ -3280,27 +2968,27 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
                     onClick={() => handleReorder(site.id, "up")}
                     disabled={isFirst || isThisPending}
                     className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
-                    title="위로"
+                    title="?꾨줈"
                   >
-                    ↑
+                    ??
                   </button>
                   <button
                     type="button"
                     onClick={() => handleReorder(site.id, "down")}
                     disabled={isLast || isThisPending}
                     className="rounded border px-2 py-1 text-xs text-gray-700 disabled:opacity-30"
-                    title="아래로"
+                    title="?꾨옒濡?
                   >
-                    ↓
+                    ??
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(site.id, site.name)}
                     disabled={isThisPending}
                     className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 disabled:opacity-30"
-                    title="삭제"
+                    title="??젣"
                   >
-                    삭제
+                    ??젣
                   </button>
                 </div>
               )}
@@ -3312,8 +3000,7 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
   );
 }
 
-===== components/SiteRegisterMap.tsx =====
-
+===== .\components\SiteRegisterMap.tsx =====
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -3350,39 +3037,39 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
   const [siteName, setSiteName] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  // SDK 로드 후 지도 초기화
+  // SDK 濡쒕뱶 ??吏??珥덇린??
   useEffect(() => {
     if (!isLoaded) return;
     if (!mapContainerRef.current) return;
     if (!window.naver) return;
 
-    // 대한민국 중심 좌표로 시작
+    // ??쒕?援?以묒떖 醫뚰몴濡??쒖옉
     const map = new window.naver.maps.Map(mapContainerRef.current, {
       center: new window.naver.maps.LatLng(36.5, 127.8),
       zoom: 7,
     });
     mapRef.current = map;
 
-    // 인증 실패 콜백
+    // ?몄쬆 ?ㅽ뙣 肄쒕갚
     window.navermap_authFailure = () => {
-      setError("네이버 지도 인증 실패. Client ID나 도메인 등록을 확인하세요.");
+      setError("?ㅼ씠踰?吏???몄쬆 ?ㅽ뙣. Client ID???꾨찓???깅줉???뺤씤?섏꽭??");
     };
-    // 지도 클릭 리스너 - 좌표 직접 지정용
+    // 吏???대┃ 由ъ뒪??- 醫뚰몴 吏곸젒 吏?뺤슜
     window.naver.maps.Event.addListener(map, "click", (e: any) => {
         const lat = e.coord.lat();
         const lng = e.coord.lng();
 
         const result: SearchResult = {
             name: "",
-            address: `직접 지정한 위치 (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            address: `吏곸젒 吏?뺥븳 ?꾩튂 (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
             latitude: lat,
             longitude: lng,
         };
 
         setSearchResult(result);
-        setSiteName(""); // 사용자가 이름 직접 입력하도록 비움
+        setSiteName(""); // ?ъ슜?먭? ?대쫫 吏곸젒 ?낅젰?섎룄濡?鍮꾩?
 
-        // 마커 갱신
+        // 留덉빱 媛깆떊
         if (markerRef.current) {
             markerRef.current.setMap(null);
         }
@@ -3393,10 +3080,10 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
     });
   }, [isLoaded]);
 
-  // 검색 실행 - 네이버 Geocoding submodule 사용
+  // 寃???ㅽ뻾 - ?ㅼ씠踰?Geocoding submodule ?ъ슜
   function handleSearch() {
     if (!window.naver?.maps?.Service) {
-      setError("지도 SDK가 아직 준비 안 됐어요. 잠시만요.");
+      setError("吏??SDK媛 ?꾩쭅 以鍮????먯뼱?? ?좎떆留뚯슂.");
       return;
     }
     if (!query.trim()) return;
@@ -3407,39 +3094,39 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
       { query: query.trim() },
       (status: any, response: any) => {
         if (status !== window.naver.maps.Service.Status.OK) {
-          setError("검색에 실패했어요. 다시 시도해주세요.");
+          setError("寃?됱뿉 ?ㅽ뙣?덉뼱?? ?ㅼ떆 ?쒕룄?댁＜?몄슂.");
           return;
         }
 
         const items = response.v2.addresses;
         if (!items || items.length === 0) {
-          setError("검색 결과가 없어요. 다른 키워드를 시도해보세요.");
+          setError("寃??寃곌낵媛 ?놁뼱?? ?ㅻⅨ ?ㅼ썙?쒕? ?쒕룄?대낫?몄슂.");
           return;
         }
 
-        // 첫 번째 결과 사용
+        // 泥?踰덉㎏ 寃곌낵 ?ъ슜
         const item = items[0];
         const lat = parseFloat(item.y);
         const lng = parseFloat(item.x);
         const displayName = item.roadAddress || item.jibunAddress || query;
 
         const result: SearchResult = {
-          name: query.trim(), // 검색어를 임시 이름으로
+          name: query.trim(), // 寃?됱뼱瑜??꾩떆 ?대쫫?쇰줈
           address: displayName,
           latitude: lat,
           longitude: lng,
         };
 
         setSearchResult(result);
-        setSiteName(""); // 답사지 이름 기본값
+        setSiteName(""); // ?듭궗吏 ?대쫫 湲곕낯媛?
 
-        // 지도 이동 + 마커 표시
+        // 吏???대룞 + 留덉빱 ?쒖떆
         const position = new window.naver.maps.LatLng(lat, lng);
         mapRef.current.setCenter(position);
         mapRef.current.setZoom(16);
 
         if (markerRef.current) {
-          markerRef.current.setMap(null); // 기존 마커 제거
+          markerRef.current.setMap(null); // 湲곗〈 留덉빱 ?쒓굅
         }
         markerRef.current = new window.naver.maps.Marker({
           position,
@@ -3449,11 +3136,11 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
     );
   }
 
-  // 저장 실행
+  // ????ㅽ뻾
   function handleSave() {
     if (!searchResult) return;
     if (!siteName.trim()) {
-      setError("답사지 이름을 입력하세요");
+      setError("?듭궗吏 ?대쫫???낅젰?섏꽭??);
       return;
     }
 
@@ -3473,7 +3160,7 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
         return;
       }
 
-      // 성공 - 폼 초기화
+      // ?깃났 - ??珥덇린??
       setQuery("");
       setSearchResult(null);
       setSiteName("");
@@ -3492,18 +3179,18 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
         strategy="afterInteractive"
         src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`}
         onReady={() => setIsLoaded(true)}
-        onError={() => setError("네이버 지도 SDK 로드 실패")}
+        onError={() => setError("?ㅼ씠踰?吏??SDK 濡쒕뱶 ?ㅽ뙣")}
       />
 
       <div className="space-y-3">
-        {/* 검색창 */}
+        {/* 寃?됱갹 */}
         <div className="flex gap-2">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="주소로 검색 (예: 경복궁 ~> 사직로 161)"
+            placeholder="二쇱냼濡?寃??(?? 寃쎈났沅?~> ?ъ쭅濡?161)"
             className="flex-1 rounded border px-3 py-2 text-gray-900"
           />
           <button
@@ -3512,7 +3199,7 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
             disabled={!isLoaded}
             className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
-            검색
+            寃??
           </button>
         </div>
 
@@ -3522,9 +3209,9 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
           </div>
         )}
 
-        {/* 지도 */}
+        {/* 吏??*/}
         <p className="text-xs text-gray-500">
-            주소로 검색이 어려운 곳은 지도를 직접 클릭해서 좌표를 지정할 수 있어요.
+            二쇱냼濡?寃?됱씠 ?대젮??怨녹? 吏?꾨? 吏곸젒 ?대┃?댁꽌 醫뚰몴瑜?吏?뺥븷 ???덉뼱??
         </p>
         <div
           ref={mapContainerRef}
@@ -3532,19 +3219,19 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
           className="rounded border"
         />
 
-        {/* 검색 결과 표시 + 저장 폼 */}
+        {/* 寃??寃곌낵 ?쒖떆 + ?????*/}
         {searchResult && (
           <div className="rounded border bg-gray-50 p-4">
             <p className="mb-1 text-xs text-gray-500">
-              위도 {searchResult.latitude.toFixed(6)} · 경도{" "}
+              ?꾨룄 {searchResult.latitude.toFixed(6)} 쨌 寃쎈룄{" "}
               {searchResult.longitude.toFixed(6)}
             </p>
             <p className="mb-3 text-sm text-gray-700">
-              주소: {searchResult.address}
+              二쇱냼: {searchResult.address}
             </p>
 
             <label className="mb-1 block text-sm font-medium text-gray-900">
-              답사지 이름 <span className="text-red-500">*</span>
+              ?듭궗吏 ?대쫫 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -3552,7 +3239,7 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
               onChange={(e) => setSiteName(e.target.value)}
               maxLength={100}
               className="mb-3 w-full rounded border px-3 py-2 text-gray-900"
-              placeholder="예: 근정전, 광화문"
+              placeholder="?? 洹쇱젙?? 愿묓솕臾?
             />
 
             <button
@@ -3561,7 +3248,7 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
               disabled={isPending}
               className="w-full rounded bg-black py-2 text-sm text-white disabled:opacity-50"
             >
-              {isPending ? "저장 중..." : "이 위치를 답사지로 등록"}
+              {isPending ? "???以?.." : "???꾩튂瑜??듭궗吏濡??깅줉"}
             </button>
           </div>
         )}
@@ -3570,30 +3257,52 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
   );
 }
 
-===== eslint.config.mjs =====
+===== .\lib\account.ts =====
+import prisma from "@/lib/prisma";
 
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+export async function getDeletionImpact(userId: string) {
+  // ???ъ슜?먭? 議곗쭅?먯씤 ?꾨줈?앺듃??
+  const ownedProjects = await prisma.project.findMany({
+    where: { organizerId: userId },
+    select: {
+      id: true,
+      title: true,
+      _count: {
+        select: { members: true, sites: true },
+      },
+    },
+  });
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
+  // 李몄뿬?먮줈 李멸? 以묒씤 ?꾨줈?앺듃 ??
+  const joinedCount = await prisma.projectMember.count({
+    where: { userId },
+  });
 
-export default eslintConfig;
+  // ?곹뼢諛쏅뒗 珥?李몄뿬????(???꾨줈?앺듃?ㅼ쓽 硫ㅻ쾭 ??
+  const affectedMembers = ownedProjects.reduce(
+    (sum, p) => sum + p._count.members,
+    0
+  );
 
+  return {
+    ownedProjects,
+    ownedProjectCount: ownedProjects.length,
+    joinedCount,
+    affectedMembers,
+  };
+}
 
-===== lib/auth.ts =====
+===== .\lib\auth-client.ts =====
+import { createAuthClient } from "better-auth/react";
+import { inferAdditionalFields } from "better-auth/client/plugins";
+import type { auth } from "./auth";
 
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  plugins: [inferAdditionalFields<typeof auth>()], 
+});
+
+===== .\lib\auth.ts =====
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
@@ -3615,28 +3324,186 @@ export const auth = betterAuth({
         input: true,
       },
     },
+    deleteUser: {
+      enabled: true,
+    },
   },
 });
 
-===== lib/auth-client.ts =====
+===== .\lib\directions.ts =====
+interface RoutePoint {
+  latitude: number;
+  longitude: number;
+}
 
-import { createAuthClient } from "better-auth/react";
-import { inferAdditionalFields } from "better-auth/client/plugins";
-import type { auth } from "./auth";
+interface RouteLeg {
+  distance: number; // 援ш컙 嫄곕━-誘명꽣
+  duration: number; //援ш컙 ?쒓컙-諛由ъ큹
+}
 
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  plugins: [inferAdditionalFields<typeof auth>()], 
-});
+interface RouteResult {
+  path: number[][];      // [[lng, lat], ...] 寃쎈줈 醫뚰몴
+  distance: number;      // 誘명꽣
+  duration: number;      // 諛由ъ큹
+  legs: RouteLeg[];        // 援ш컙蹂?嫄곕━/?쒓컙
+  usedPointCount: number; //?ㅼ젣 寃쎈줈???ъ슜??吏?????뺣났 ?쒖쇅)
+}
 
-===== lib/permissions.ts =====
 
+export async function calculateRoute(
+  points: RoutePoint[]
+): Promise<RouteResult | null> {
+  // ?듭궗吏媛 2媛?誘몃쭔?대㈃ 寃쎈줈 ?놁쓬
+  if (points.length < 2) {
+    return null;
+  }
+
+  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+  const clientSecret = process.env.NAVER_MAP_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("?ㅼ씠踰?吏??API ?ㅺ? ?ㅼ젙?섏? ?딆븯?댁슂");
+  }
+  //?뺣났 媛먯튂??泥?吏?먭낵 留덉?留?吏?먯씠 媛숈쑝硫?留덉?留??쒖쇅
+  let routePoints = points;
+  if (points.length >= 3) {
+    const first =points[0];
+    const last = points[points.length -1];
+    if (
+      first.latitude === last.latitude &&
+      first.longitude === last.longitude
+    ) {
+      routePoints = points.slice(0,-1); // 留덉?留?吏???쒖쇅
+    }
+  }
+  
+  const start = routePoints[0];
+  const goal = routePoints[routePoints.length - 1];
+  const waypoints = routePoints.slice(1, -1); // 以묎컙 ?듭궗吏??
+
+  // 醫뚰몴??"寃쎈룄,?꾨룄" ?뺤떇 (?ㅼ씠踰?洹쒖튃: 寃쎈룄 癒쇱?)
+  const startParam = `${start.longitude},${start.latitude}`;
+  const goalParam = `${goal.longitude},${goal.latitude}`;
+
+  // 寃쎌쑀吏??肄쒕줎(:)?쇰줈 援щ텇
+  const waypointsParam = waypoints
+    .map((w) => `${w.longitude},${w.latitude}`)
+    .join(":");
+
+  // API URL 援ъ꽦
+  const url = new URL(
+    "https://maps.apigw.ntruss.com/map-direction-15/v1/driving"
+  );
+  url.searchParams.set("start", startParam);
+  url.searchParams.set("goal", goalParam);
+  if (waypointsParam) {
+    url.searchParams.set("waypoints", waypointsParam);
+  }
+  url.searchParams.set("option", "trafast"); // ?ㅼ떆媛?鍮좊Ⅸ湲? 寃쎌쑀吏 ?쒖꽌 ?좎?
+
+  // API ?몄텧 - ?ㅻ뜑???몄쬆 ?뺣낫
+  const response = await fetch(url.toString(), {
+    headers: {
+      "x-ncp-apigw-api-key-id": clientId,
+      "x-ncp-apigw-api-key": clientSecret,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`寃쎈줈 怨꾩궛 ?ㅽ뙣: ${response.status}`);
+  }
+
+
+  // ?묐떟 肄붾뱶 ?뺤씤 (0???깃났)
+  const data = await response.json();
+  if (data.code !== 0) {
+    throw new Error(`寃쎈줈瑜?李얠쓣 ???놁뼱?? ${data.message || "?????녿뒗 ?ㅻ쪟"}`);
+  }
+  
+  // 寃곌낵 ?뚯떛 - trafast(鍮좊Ⅸ 寃쎈줈) ?ъ슜
+  const route = data.route?.trafast?.[0];
+  if (!route) {
+    throw new Error("寃쎈줈 ?곗씠?곌? ?놁뼱??);
+  }
+  //援ш컙蹂??뺣낫 議곕┰
+  //waypoints諛곗뿴 : 媛?寃쎌쑀吏源뚯???援ш컙?뺣낫
+  //goal: 留덉?留?寃쎌쑀吏 -> 紐⑹쟻吏 援ш컙 ?뺣낫
+  const summary = route.summary;
+  const legs: RouteLeg[] = [];
+
+  //寃쎌쑀吏?ㅼ쓽 援ш컙
+  if (summary.waypoints && Array.isArray(summary.waypoints)) {
+    for (const wp of summary.waypoints) {
+      legs.push({
+        distance: wp.distance ?? 0,
+        duration: wp.duration ?? 0,
+      });
+    }
+  }
+
+  //留덉?留?紐⑹쟻吏 援ш컙
+  legs.push({
+    distance: summary.goal.distance ?? 0,
+    duration: summary.goal.duration ?? 0,
+  });
+
+  return {
+    path: route.path,                    // ?꾨줈 醫뚰몴 諛곗뿴
+    distance: route.summary.distance,    // 誘명꽣
+    duration: route.summary.duration,    // 諛由ъ큹
+    legs,
+    usedPointCount: routePoints.length, //?뺣났 ?쒖쇅 ?ㅼ젣 吏????
+  };
+}
+
+===== .\lib\geolocation.ts =====
+export interface Coords{
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+}
+
+export function getCurrentPosition(): Promise<Coords> {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error("??釉뚮씪?곗????꾩튂 湲곕뒫??吏?먰븯吏 ?딆븘??));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) =>{
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                });
+            },
+            (error) =>{
+                if (error.code === error.PERMISSION_DENIED) {
+                    reject(new Error("?꾩튂 沅뚰븳??嫄곕??먯뼱?? 釉뚮씪?곗? ?ㅼ젙?먯꽌 ?덉슜?댁＜?몄슂"));
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    reject(new Error("?꾩튂瑜??뺤씤?????놁뼱??));
+                } else if (error.code === error.TIMEOUT) {
+                    reject(new Error("?꾩튂 ?뺤씤 ?쒓컙??珥덇낵?먯뼱??));
+                } else {
+                    reject(new Error("?꾩튂瑜?媛?몄삤?붾뜲 ?ㅽ뙣?덉뼱??));
+                }
+            },
+            {enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+            }
+        );
+    });
+}
+
+===== .\lib\permissions.ts =====
 import prisma from "@/lib/prisma";
 
 /**
- * 이 사용자가 이 프로젝트에 접근 가능한가?
- * - 만든 사람(organizer)이거나
- * - 참가자(member)이면 OK
+ * ???ъ슜?먭? ???꾨줈?앺듃???묎렐 媛?ν븳媛?
+ * - 留뚮뱺 ?щ엺(organizer)?닿굅??
+ * - 李멸???member)?대㈃ OK
  */
 export async function canAccessProject(userId: string, projectId: string) {
   const project = await prisma.project.findFirst({
@@ -3652,8 +3519,8 @@ export async function canAccessProject(userId: string, projectId: string) {
 }
 
 /**
- * 이 사용자가 이 프로젝트의 organizer인가?
- * 프로젝트 수정/삭제처럼 organizer만 할 수 있는 작업용
+ * ???ъ슜?먭? ???꾨줈?앺듃??organizer?멸??
+ * ?꾨줈?앺듃 ?섏젙/??젣泥섎읆 organizer留??????덈뒗 ?묒뾽??
  */
 export async function isProjectOrganizer(userId: string, projectId: string) {
   const project = await prisma.project.findFirst({
@@ -3665,8 +3532,7 @@ export async function isProjectOrganizer(userId: string, projectId: string) {
   return project !== null;
 }
 
-===== lib/prisma.ts =====
-
+===== .\lib\prisma.ts =====
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -3686,8 +3552,7 @@ if (process.env.NODE_ENV !== "production") {
 
 export default prisma;
 
-===== lib/session.ts =====
-
+===== .\lib\session.ts =====
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -3706,18 +3571,17 @@ export async function requireAuth() {
   return session;
 }
 
-===== lib/validations.ts =====
-
+===== .\lib\validations.ts =====
 import { z } from "zod";
 
 export const createProjectSchema = z.object({
   title: z
     .string()
-    .min(1, "제목을 입력하세요")
-    .max(100, "제목은 100자 이내로 입력하세요"),
+    .min(1, "?쒕ぉ???낅젰?섏꽭??)
+    .max(100, "?쒕ぉ? 100???대궡濡??낅젰?섏꽭??),
   description: z
     .string()
-    .max(1000, "설명은 1000자 이내로 입력하세요")
+    .max(1000, "?ㅻ챸? 1000???대궡濡??낅젰?섏꽭??)
     .optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -3725,7 +3589,7 @@ export const createProjectSchema = z.object({
 
 export const createSiteSchema = z.object({
   projectId: z.string().min(1),
-  name: z.string().min(1, "답사지 이름을 입력하세요").max(100),
+  name: z.string().min(1, "?듭궗吏 ?대쫫???낅젰?섏꽭??).max(100),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   address: z.string().max(200).optional(),
@@ -3735,7 +3599,7 @@ export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
 export const updateProjectSchema = z.object({
   projectId: z.string().min(1),
-  title: z.string().min(1, "제목을 입력하세요").max(100),
+  title: z.string().min(1, "?쒕ぉ???낅젰?섏꽭??).max(100),
   description: z.string().max(1000).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -3744,126 +3608,44 @@ export const updateProjectSchema = z.object({
 export const updateSiteSchema = z.object({
   siteId: z.string().min(1),
   projectId: z.string().min(1),
-  name: z.string().min(1, "이름을 입력하세요").max(100),
-  description: z.string().max(10000, "해설은 10000자 이내로 작성하세요").optional(),
+  name: z.string().min(1, "?대쫫???낅젰?섏꽭??).max(100),
+  description: z.string().max(10000, "?댁꽕? 10000???대궡濡??묒꽦?섏꽭??).optional(),
 });
 
 export const createScheduleSchema = z.object({
   projectId: z.string().min(1),
-  title: z.string().min(1, "일정 제목을 입력하세요").max(100),
-  date: z.string().min(1, "날짜를 선택하세요"),
+  title: z.string().min(1, "?쇱젙 ?쒕ぉ???낅젰?섏꽭??).max(100),
+  date: z.string().min(1, "?좎쭨瑜??좏깮?섏꽭??),
   startTime: z
     .string()
-    .regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요 (예: 09:30)"),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+    .regex(/^\d{2}:\d{2}$/, "?쒓컖 ?뺤떇???섎せ?먯뼱??(?? 09:30)"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "?쒓컖 ?뺤떇???섎せ?먯뼱??),
   siteId: z.string().optional(),
 });
 
 export const updateScheduleSchema = z.object({
   scheduleId: z.string().min(1),
   projectId: z.string().min(1),
-  title: z.string().min(1, "일정 제목을 입력하세요").max(100),
-  date: z.string().min(1, "날짜를 선택하세요"),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, "시각 형식이 잘못됐어요"),
+  title: z.string().min(1, "?쇱젙 ?쒕ぉ???낅젰?섏꽭??).max(100),
+  date: z.string().min(1, "?좎쭨瑜??좏깮?섏꽭??),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "?쒓컖 ?뺤떇???섎せ?먯뼱??),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "?쒓컖 ?뺤떇???섎せ?먯뼱??),
   siteId: z.string().optional(),
 });
 
 export const createInvitationsSchema = z.object({
   projectId: z.string().min(1),
   emails: z
-    .array(z.string().email("이메일 형식이 잘못됐어요"))
-    .min(1, "이메일을 한 개 이상 입력하세요")
-    .max(100, "한 번에 최대 100개까지 초대할 수 있어요"),
+    .array(z.string().email("?대찓???뺤떇???섎せ?먯뼱??))
+    .min(1, "?대찓?쇱쓣 ??媛??댁긽 ?낅젰?섏꽭??)
+    .max(100, "??踰덉뿉 理쒕? 100媛쒓퉴吏 珥덈??????덉뼱??),
 });
 
 export const acceptInvitationSchema = z.object({
   token: z.string().min(1),
 });
 
-===== next.config.ts =====
-
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-export default nextConfig;
-
-
-===== package.json =====
-
-{
-  "name": "dapsa-saas",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "better-auth": "^1.6.22",
-    "next": "16.2.9",
-    "pg": "^8.22.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@tailwindcss/typography": "^0.5.20",
-    "@types/node": "^20",
-    "@types/pg": "^8.20.0",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "dotenv": "^17.4.2",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.9",
-    "prisma": "^7.8.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
-}
-
-
-===== postcss.config.mjs =====
-
-const config = {
-  plugins: {
-    "@tailwindcss/postcss": {},
-  },
-};
-
-export default config;
-
-
-===== prisma.config.ts =====
-
-// This file was generated by Prisma, and assumes you have installed the following:
-// npm install --save-dev prisma dotenv
-import "dotenv/config";
-import { defineConfig } from "prisma/config";
-
-export default defineConfig({
-  schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-  },
-  datasource: {
-    url: process.env["DATABASE_URL"],
-  },
-});
-
-
-===== prisma/schema.prisma =====
-
+===== .\prisma\schema.prisma =====
 generator client {
   provider = "prisma-client-js"
 }
@@ -3873,7 +3655,7 @@ datasource db {
 }
 
 // ============================================
-// Better Auth 핵심 테이블들
+// Better Auth ?듭떖 ?뚯씠釉붾뱾
 // ============================================
 model User {
   id            String    @id @default(cuid())
@@ -3885,11 +3667,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Better Auth 관계
+  // Better Auth 愿怨?
   sessions Session[]
   accounts Account[]
 
-  // 우리 서비스 관계
+  // ?곕━ ?쒕퉬??愿怨?
   projects       Project[]
   projectMembers ProjectMember[]
 }
@@ -3935,7 +3717,7 @@ model Verification {
 }
 
 // ============================================
-// 우리 서비스 테이블들 (기존과 동일)
+// ?곕━ ?쒕퉬???뚯씠釉붾뱾 (湲곗〈怨??숈씪)
 // ============================================
 enum Role {
   ADMIN
@@ -3958,8 +3740,12 @@ model Project {
   status      ProjectStatus @default(DRAFT)
   createdAt   DateTime      @default(now())
 
+  //寃쎈줈 罹먯떆 ?꾨뱶 
+  routeData      Json?     //寃쎈줈 醫뚰몴 諛곗뿴
+  routeUpdatedAt DateTime? //寃쎈줈 怨꾩궛 ?쒓컖(?≪쓬 ?먮떒??
+  
   organizerId String
-  organizer   User   @relation(fields: [organizerId], references: [id])
+  organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
 
   sites       Site[]
   schedules   Schedule[]
@@ -4024,122 +3810,8 @@ model ProjectMember {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
 }
 
-===== proxy.ts =====
-
-import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
-
-// 로그인 필요한 경로들
-const protectedRoutes = ["/dashboard", "/projects"];
-
-// 로그인 했으면 가면 안 되는 경로들 (이미 로그인한 사람이 로그인 페이지 가는 거 방지)
-const authRoutes = ["/sign-in", "/sign-up"];
-
-export async function proxy(request: NextRequest) {
-  const sessionCookie = getSessionCookie(request);
-  const { pathname } = request.nextUrl;
-
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
-
-  // 로그인 안 했는데 보호된 경로 접근 → 로그인 페이지로
-  if (isProtectedRoute && !sessionCookie) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
-
-  // 로그인 했는데 로그인/회원가입 페이지 접근 → 메인으로
-  if (isAuthRoute && sessionCookie) {
-    const hasInvite = request.nextUrl.searchParams.has("invite");
-    if (!hasInvite) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-  }
-}
-
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-};
-
-===== README.md =====
-
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-
-===== tsconfig.json =====
-
-{
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules"]
-}
