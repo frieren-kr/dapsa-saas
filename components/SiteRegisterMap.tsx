@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Script from "next/script";
 import { createSite } from "@/app/projects/[id]/actions";
+import { env } from "@/lib/env";
 
 declare global {
   interface Window {
@@ -168,7 +169,7 @@ export default function SiteRegisterMap({ projectId }: SiteRegisterMapProps) {
     });
   }
 
-  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+  const clientId = env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
 
   return (
     <>

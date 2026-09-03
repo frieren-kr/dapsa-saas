@@ -12,6 +12,7 @@ import {
   createInvitationsSchema,
 } from "@/lib/validations";
 import { calculateRoute } from "@/lib/directions";
+import { extractR2Keys, deleteR2Objects } from "@/lib/r2";
 
 export async function createSite(input: {
   projectId: string;
@@ -82,6 +83,15 @@ export async function deleteSite(input: { siteId: string; projectId: string }) {
       data: { orderIndex: { decrement: 1 } },
     }),
   ]);
+
+  // 해설(description)에 박혀 있던 R2 이미지들 정리. DB 삭제는 이미 끝났으니
+  // 실패해도 성공 반환하고 로깅만 한다 (스토리지 청소 실패가 삭제를 되돌리면 안 됨).
+  try {
+    const keys = extractR2Keys(site.description ?? "");
+    await deleteR2Objects(keys);
+  } catch (e) {
+    console.error(`R2 객체 삭제 실패 (site ${input.siteId}):`, e);
+  }
 
   revalidatePath(`/projects/${input.projectId}`);
   return { success: true };

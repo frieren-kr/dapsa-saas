@@ -1,3 +1,5 @@
+import { env } from "./env";
+
 interface RoutePoint {
   latitude: number;
   longitude: number;
@@ -25,8 +27,8 @@ export async function calculateRoute(
     return null;
   }
 
-  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
-  const clientSecret = process.env.NAVER_MAP_CLIENT_SECRET;
+  const clientId = env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+  const clientSecret = env.NAVER_MAP_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     throw new Error("네이버 지도 API 키가 설정되지 않았어요");

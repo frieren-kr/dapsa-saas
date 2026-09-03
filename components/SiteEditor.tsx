@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { updateSite } from "@/app/projects/[id]/actions";
+import ImageUploadButton from "@/components/ImageUploadButton";
 
 interface SiteEditorProps {
   site: {
@@ -27,6 +28,28 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 업로드된 이미지 마크다운을 textarea 커서 위치에 삽입한다.
+  // 커서를 못 잡으면(ref 없음 = 미리보기 탭 등) 맨 끝에 append 폴백.
+  function handleImageInsert(markdown: string) {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setDescription((prev) => (prev ? `${prev}\n${markdown}` : markdown));
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    setDescription((prev) => prev.slice(0, start) + markdown + prev.slice(end));
+
+    // 삽입 직후 커서를 삽입한 텍스트 끝으로 이동
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const pos = start + markdown.length;
+      textarea.setSelectionRange(pos, pos);
+    });
+  }
 
   function handleSave() {
     if (!name.trim()) {
@@ -90,7 +113,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
           </div>
 
           {site.description ? (
-            <div className="prose prose-sm max-w-none text-gray-900">
+            <div className="prose prose-sm max-w-none text-gray-900 [&_img]:max-w-full [&_img]:h-auto">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {site.description}
               </ReactMarkdown>
@@ -122,38 +145,71 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
           </div>
 
           <div className="mb-4">
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-900">
-                해설 (마크다운 형식으로 작성해주세요. ex. **굵게**, *기울임*, [링크](https://...))
-              </label>
-              <div className="flex gap-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("edit")}
-                  className={`rounded px-2 py-1 ${
-                    activeTab === "edit"
-                      ? "bg-gray-900 text-white"
-                      : "border text-gray-700"
-                  }`}
-                >
-                  편집
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("preview")}
-                  className={`rounded px-2 py-1 ${
-                    activeTab === "preview"
-                      ? "bg-gray-900 text-white"
-                      : "border text-gray-700"
-                  }`}
-                >
-                  미리보기
-                </button>
-              </div>
+            {/* 1층: 해설 label 단독 (문법 예시는 placeholder에 있으므로 생략) */}
+            <label className="mb-1 block text-sm font-medium text-gray-900">
+              해설
+            </label>
+
+            {/* 2층: 편집/미리보기 탭 (왼쪽 정렬) */}
+            <div className="mb-2 flex gap-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("edit")}
+                className={`whitespace-nowrap rounded px-2 py-1 ${
+                  activeTab === "edit"
+                    ? "bg-gray-900 text-white"
+                    : "border text-gray-700"
+                }`}
+              >
+                편집
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("preview")}
+                className={`whitespace-nowrap rounded px-2 py-1 ${
+                  activeTab === "preview"
+                    ? "bg-gray-900 text-white"
+                    : "border text-gray-700"
+                }`}
+              >
+                미리보기
+              </button>
             </div>
+
+            {/* 3층: 삽입 툴바 — 커서 삽입은 편집 탭에서만 의미 있으므로 편집 탭에서만 노출.
+                좁은 폭에선 다음 줄로 wrap. */}
+            {activeTab === "edit" && (
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                <ImageUploadButton
+                  projectId={site.projectId}
+                  onUploaded={handleImageInsert}
+                  disabled={isPending}
+                />
+                {/* 오른쪽 여백에 마크다운 작성 요령. 좁으면 버튼 아래로 wrap */}
+                <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-gray-400">
+                  <span>마크다운:</span>
+                  <code className="whitespace-nowrap rounded bg-gray-100 px-1 text-gray-600">
+                    **굵게**
+                  </code>
+                  <code className="whitespace-nowrap rounded bg-gray-100 px-1 text-gray-600">
+                    *기울임*
+                  </code>
+                  <code className="whitespace-nowrap rounded bg-gray-100 px-1 text-gray-600">
+                    # 제목
+                  </code>
+                  <code className="whitespace-nowrap rounded bg-gray-100 px-1 text-gray-600">
+                    - 목록
+                  </code>
+                  <code className="whitespace-nowrap rounded bg-gray-100 px-1 text-gray-600">
+                    [링크](url)
+                  </code>
+                </div>
+              </div>
+            )}
 
             {activeTab === "edit" ? (
               <textarea
+                ref={textareaRef}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={16}
@@ -172,7 +228,7 @@ export default function SiteEditor({ site, canEdit }: SiteEditorProps) {
             ) : (
               <div className="min-h-[400px] rounded border bg-gray-50 p-4">
                 {description ? (
-                  <div className="prose prose-sm max-w-none text-gray-900">
+                  <div className="prose prose-sm max-w-none text-gray-900 [&_img]:max-w-full [&_img]:h-auto">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {description}
                     </ReactMarkdown>

@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
+import { env } from "@/lib/env";
 
 // TypeScript가 window.naver의 존재를 알도록 알려주는 선언
 // 네이버 지도 SDK는 전역 객체 window.naver로 붙기 때문에 필요
@@ -57,7 +58,7 @@ export default function NaverMap({
     };
   }, [isLoaded, latitude, longitude, zoom]);
 
-  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+  const clientId = env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
 
   if (!clientId) {
     return (

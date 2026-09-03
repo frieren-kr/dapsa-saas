@@ -105,7 +105,7 @@ export default function RouteView({
       <div className="mb-3 flex items-center justify-between">
         <div className="text-sm text-gray-600">
           {routeData
-            ? "날짜별 이동 경로예요."
+            ? "날짜별 이동 경로입니다. 차량 이동 기준 예상치입니다."
             : "아직 경로가 계산되지 않았어요."}
         </div>
         {canEdit && (

@@ -7,6 +7,7 @@ import { createProjectSchema } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 import { isProjectOrganizer } from "@/lib/permissions";
 import { updateProjectSchema } from "@/lib/validations";
+import { listR2Keys, deleteR2Objects } from "@/lib/r2";
 
 export async function createProject(
   _prevState: { error?: string } | null,
@@ -101,6 +102,15 @@ export async function deleteProject(input: { projectId: string }) {
   await prisma.project.delete({
     where: { id: input.projectId },
   });
+
+  // R2에 남은 이 프로젝트 이미지들 정리. 실패해도 프로젝트 삭제는 이미 끝났으니
+  // 함수는 성공으로 반환하고 로깅만 한다 (스토리지 청소 실패가 삭제를 되돌리면 안 됨).
+  try {
+    const keys = await listR2Keys(`projects/${input.projectId}/`);
+    await deleteR2Objects(keys);
+  } catch (e) {
+    console.error(`R2 객체 삭제 실패 (project ${input.projectId}):`, e);
+  }
 
   revalidatePath("/dashboard");
   return { success: true };

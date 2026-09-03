@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { getCurrentPosition } from "@/lib/geolocation";
+import { env } from "@/lib/env";
 
 declare global {
   interface Window {
@@ -160,7 +161,7 @@ export default function ProjectMap({
     }
   }
 
-  const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
+  const clientId = env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
 
   if (stops.length === 0) {
     return (
