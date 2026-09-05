@@ -37,3 +37,27 @@ export function getCurrentPosition(): Promise<Coords> {
         );
     });
 }
+
+/**
+ * 두 좌표 사이의 거리를 미터로 반환 (Haversine 공식).
+ * 위경도는 평면이 아니라 구면 좌표라, 단순 뺄셈이 아니라
+ * 지구 반지름 기반 구면 거리 계산이 필요하다.
+ */
+export function distanceInMeters(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+): number {
+    const R = 6371000; // 지구 반지름 (미터)
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+    return 2 * R * Math.asin(Math.sqrt(a));
+}

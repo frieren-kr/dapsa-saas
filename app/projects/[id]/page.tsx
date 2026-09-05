@@ -70,7 +70,15 @@ export default async function ProjectPage({
       (latestSiteChange !== null &&
         new Date(project.routeUpdatedAt) < latestSiteChange));
 
-  
+  // 해설이 실제로 있는 답사지 (null·빈문자·공백만 = 없음).
+  // schedules.site select에는 description이 없어서, 이미 전부 불러온
+  // project.sites에서 계산해 두고 siteId로 찾아 쓴다.
+  const hasDescriptionBySiteId = new Map(
+    project.sites.map((site) => [
+      site.id,
+      site.description != null && site.description.trim() !== "",
+    ])
+  );
 
   // 날짜 표시 헬퍼
   const formatDate = (d: Date | null) =>
@@ -158,6 +166,8 @@ export default async function ProjectPage({
                 latitude: s.site!.latitude,
                 longitude: s.site!.longitude,
                 date: dateKey,
+                hasDescription:
+                  hasDescriptionBySiteId.get(s.site!.id) ?? false,
               };
             });
 
@@ -197,6 +207,7 @@ export default async function ProjectPage({
             }))}
             schedules={project.schedules}
             canEdit={canEdit}
+            hasDescriptionBySiteId={hasDescriptionBySiteId}
           />
         </div>
 
@@ -219,7 +230,10 @@ export default async function ProjectPage({
             답사지 이름을 눌러 해설을 확인하세요.
           </p>
           <SiteList
-            sites={project.sites}
+            sites={project.sites.map((site) => ({
+              ...site,
+              hasDescription: hasDescriptionBySiteId.get(site.id) ?? false,
+            }))}
             projectId={project.id}
             canEdit={canEdit}
           />

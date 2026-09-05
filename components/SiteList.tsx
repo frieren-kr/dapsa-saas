@@ -11,6 +11,7 @@ interface Site {
   latitude: number;
   longitude: number;
   orderIndex: number;
+  hasDescription: boolean; // 해설이 있어야 참여자에게 링크를 건다
 }
 
 interface SiteListProps {
@@ -70,10 +71,19 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
           const isLast = index === sites.length - 1;
           const isThisPending = pendingId === site.id && isPending;
 
-          // 답사지 정보 블록 (이름 + 주소 + 좌표)
+          // 답사지 정보 블록 (이름 + 주소 + 좌표) — 참여자 화면용.
+          // 해설이 있을 때만 이름을 링크처럼 보이게 한다.
           const siteInfo = (
             <>
-              <h3 className="font-medium text-gray-900">{site.name}</h3>
+              <h3
+                className={
+                  site.hasDescription
+                    ? "font-medium text-blue-600 underline"
+                    : "font-medium text-gray-900"
+                }
+              >
+                {site.name}
+              </h3>
               {site.address && (
                 <p className="text-xs text-gray-500">{site.address}</p>
               )}
@@ -95,9 +105,10 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
               {/* 조직자: 이름만 링크 / 참여자: 정보 블록 전체 링크 */}
               {canEdit ? (
                 <div className="flex-1">
+                  {/* organizer는 해설 유무와 무관하게 항상 링크 */}
                   <Link
                     href={`/projects/${projectId}/sites/${site.id}`}
-                    className="font-medium text-gray-900 hover:underline"
+                    className="font-medium text-blue-600 underline hover:text-blue-800"
                   >
                     {site.name}
                   </Link>
@@ -108,13 +119,16 @@ export default function SiteList({ sites, projectId, canEdit }: SiteListProps) {
                     {site.latitude.toFixed(6)}, {site.longitude.toFixed(6)}
                   </p>
                 </div>
-              ) : (
+              ) : site.hasDescription ? (
                 <Link
                   href={`/projects/${projectId}/sites/${site.id}`}
                   className="flex-1 rounded hover:bg-gray-50"
                 >
                   {siteInfo}
                 </Link>
+              ) : (
+                // 해설이 없으면 클릭할 게 없으니 링크도 hover도 주지 않는다
+                <div className="flex-1 rounded">{siteInfo}</div>
               )}
 
               {/* 편집 버튼 (조직자만) */}

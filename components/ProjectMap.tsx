@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
-import { getCurrentPosition } from "@/lib/geolocation";
+import { getCurrentPosition, type Coords } from "@/lib/geolocation";
 import { env } from "@/lib/env";
 
 declare global {
@@ -25,12 +25,16 @@ interface ProjectMapProps {
   stops: RouteStop[];           // 선택된 날짜의 일정 순 답사지
   routePath?: number[][] | null; // 그 날짜의 도로 경로
   height?: string;
+  onLocate?: (coords: Coords) => void; // 위치를 잡으면 부모에게 좌표를 알려준다
+  myCoords?: Coords | null;            // 부모가 들고 있는 현재 위치 (마커의 유일한 출처)
 }
 
 export default function ProjectMap({
   stops,
   routePath,
   height = "400px",
+  onLocate,
+  myCoords,
 }: ProjectMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -118,41 +122,58 @@ export default function ProjectMap({
     };
   }, [isLoaded, stops, routePath]);
 
+  // 내 위치 마커는 myCoords만 보고 그린다.
+  // deps에 stops/routePath가 있는 건, 위 effect가 날짜 전환 때 지도를 새로
+  // 만들기 때문. 그때 이 effect도 다시 돌아야 새 지도에 마커가 다시 붙는다.
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!window.naver) return;
+    if (stops.length === 0) return; // 지도 자체가 렌더되지 않는 경우
+    if (!mapRef.current) return;
+
+    if (myLocationMarkerRef.current) {
+      myLocationMarkerRef.current.setMap(null);
+      myLocationMarkerRef.current = null;
+    }
+    if (!myCoords) return;
+
+    myLocationMarkerRef.current = new window.naver.maps.Marker({
+      position: new window.naver.maps.LatLng(
+        myCoords.latitude,
+        myCoords.longitude
+      ),
+      map: mapRef.current,
+      icon: {
+        content: `
+          <div style="
+            width: 20px; height: 20px;
+            background: #2563eb;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #2563eb, 0 2px 6px rgba(0,0,0,0.4);
+          "></div>
+        `,
+        anchor: new window.naver.maps.Point(10, 10),
+      },
+      title: "현재 내 위치",
+      zIndex: 1000,
+    });
+  }, [isLoaded, myCoords, stops, routePath]);
+
   async function handleShowMyLocation() {
     setError(null);
     setLocating(true);
     try {
       const coords = await getCurrentPosition();
+      onLocate?.(coords);
       if (!mapRef.current || !window.naver) {
         setError("지도가 아직 준비되지 않았어요");
         return;
       }
-      const position = new window.naver.maps.LatLng(
-        coords.latitude,
-        coords.longitude
+      // 마커는 위 effect가 myCoords를 보고 그린다. 여기선 화면만 옮긴다.
+      mapRef.current.setCenter(
+        new window.naver.maps.LatLng(coords.latitude, coords.longitude)
       );
-      if (myLocationMarkerRef.current) {
-        myLocationMarkerRef.current.setMap(null);
-      }
-      myLocationMarkerRef.current = new window.naver.maps.Marker({
-        position,
-        map: mapRef.current,
-        icon: {
-          content: `
-            <div style="
-              width: 20px; height: 20px;
-              background: #2563eb;
-              border-radius: 50%;
-              border: 3px solid white;
-              box-shadow: 0 0 0 2px #2563eb, 0 2px 6px rgba(0,0,0,0.4);
-            "></div>
-          `,
-          anchor: new window.naver.maps.Point(10, 10),
-        },
-        title: "현재 내 위치",
-        zIndex: 1000,
-      });
-      mapRef.current.setCenter(position);
       mapRef.current.setZoom(15);
     } catch (e) {
       setError(e instanceof Error ? e.message : "위치를 가져오지 못했어요");

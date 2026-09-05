@@ -29,6 +29,8 @@ interface ScheduleSectionProps {
   sites: Site[];
   schedules: Schedule[];
   canEdit: boolean;
+  // siteId → 해설 유무. 참여자에게 링크를 걸지 판단하는 데만 쓴다.
+  hasDescriptionBySiteId: Map<string, boolean>;
 }
 
 // Date → "YYYY-MM-DD" (로컬 기준. UTC 변환 시 날짜 밀림 방지)
@@ -68,6 +70,7 @@ export default function ScheduleSection({
   sites,
   schedules,
   canEdit,
+  hasDescriptionBySiteId,
 }: ScheduleSectionProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -199,14 +202,21 @@ export default function ScheduleSection({
                     <p className="text-sm font-medium text-gray-900">
                       {schedule.title}
                     </p>
-                    {schedule.site && (
-                      <Link
-                        href={`/projects/${projectId}/sites/${schedule.site.id}`}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        → {schedule.site.name}
-                      </Link>
-                    )}
+                    {/* organizer는 항상 링크, 참여자는 해설이 있을 때만 */}
+                    {schedule.site &&
+                      (canEdit ||
+                      hasDescriptionBySiteId.get(schedule.site.id) ? (
+                        <Link
+                          href={`/projects/${projectId}/sites/${schedule.site.id}`}
+                          className="text-xs text-blue-600 underline hover:text-blue-800"
+                        >
+                          → {schedule.site.name}
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-gray-900">
+                          → {schedule.site.name}
+                        </span>
+                      ))}
                   </div>
                   {canEdit && (
                     <div className="flex shrink-0 gap-1">

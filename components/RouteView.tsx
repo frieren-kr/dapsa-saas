@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import ProjectMap from "./ProjectMap";
+import { distanceInMeters, type Coords } from "@/lib/geolocation";
 import { updateProjectRoute } from "@/app/projects/[id]/actions";
+
+// 이 반경 안의 답사지를 "근처"로 본다
+const NEARBY_RADIUS_M = 700;
 
 interface RouteStop {
   siteId: string;
@@ -10,6 +15,7 @@ interface RouteStop {
   latitude: number;
   longitude: number;
   date: string; // "YYYY-MM-DD"
+  hasDescription: boolean; // 해설이 있어야 배너에서 링크를 건다
 }
 
 interface DateRoute {
@@ -49,18 +55,57 @@ export default function RouteView({
 }: RouteViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // "내 위치" 버튼으로 잡은 좌표. ProjectMap이 onLocate로 알려준다.
+  const [myCoords, setMyCoords] = useState<Coords | null>(null);
 
   // 날짜별로 stops 그룹핑
-  const dateKeys = Array.from(new Set(stops.map((s) => s.date))).sort();
+  const dateKeys = useMemo(
+    () => Array.from(new Set(stops.map((s) => s.date))).sort(),
+    [stops]
+  );
   const [activeDate, setActiveDate] = useState<string | null>(null);
-  const effectiveDate =
-    activeDate && dateKeys.includes(activeDate)
-      ? activeDate
-      : dateKeys[0] ?? null;
+  const effectiveDate = useMemo(
+    () =>
+      activeDate && dateKeys.includes(activeDate)
+        ? activeDate
+        : dateKeys[0] ?? null,
+    [activeDate, dateKeys]
+  );
 
-  const activeStops = effectiveDate
-    ? stops.filter((s) => s.date === effectiveDate)
-    : [];
+  // useMemo 필수: 매 렌더 새 배열을 만들면 ProjectMap의 effect가 재실행돼
+  // 지도가 통째로 다시 만들어지고, 찍어둔 내 위치 마커가 사라진다.
+  const activeStops = useMemo(
+    () => (effectiveDate ? stops.filter((s) => s.date === effectiveDate) : []),
+    [stops, effectiveDate]
+  );
+  const mapStops = useMemo(
+    () =>
+      activeStops.map((s) => ({
+        siteId: s.siteId,
+        name: s.name,
+        latitude: s.latitude,
+        longitude: s.longitude,
+      })),
+    [activeStops]
+  );
+
+  // 현재 위치에서 NEARBY_RADIUS_M 안에 있는 당일 답사지 (가까운 순)
+  const nearbyStops = useMemo(() => {
+    if (!myCoords) return [];
+    return activeStops
+      .map((s) => ({
+        ...s,
+        distance: distanceInMeters(
+          myCoords.latitude,
+          myCoords.longitude,
+          s.latitude,
+          s.longitude
+        ),
+      }))
+      .filter((s) => s.distance <= NEARBY_RADIUS_M)
+      .sort((a, b) => a.distance - b.distance);
+  }, [myCoords, activeStops]);
+
   const activeRoute =
     effectiveDate && routeData ? routeData[effectiveDate] ?? null : null;
 
@@ -159,6 +204,46 @@ export default function RouteView({
         </div>
       )}
 
+      {/* 근접 배너: 위치를 잡기 전(myCoords 없음)에는 아무것도 보이지 않는다 */}
+      {myCoords &&
+        (nearbyStops.length > 0 ? (
+          <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <p className="mb-2 text-sm font-medium text-blue-900">
+              📍 현재 위치에서 {NEARBY_RADIUS_M}m 안에 답사지{" "}
+              {nearbyStops.length}곳이 있어요
+            </p>
+            <ul className="space-y-1">
+              {nearbyStops.map((s) => (
+                <li
+                  key={s.siteId}
+                  className="flex items-center justify-between text-sm text-blue-900"
+                >
+                  {/* organizer는 항상 링크, 참여자는 해설이 있을 때만 */}
+                  {canEdit || s.hasDescription ? (
+                    <Link
+                      href={`/projects/${projectId}/sites/${s.siteId}`}
+                      className="flex-1 truncate text-blue-600 underline hover:text-blue-800"
+                    >
+                      {s.name}
+                    </Link>
+                  ) : (
+                    <span className="flex-1 truncate text-gray-900">
+                      {s.name}
+                    </span>
+                  )}
+                  <span className="ml-2 shrink-0 font-medium text-blue-700">
+                    {Math.round(s.distance)}m
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+            📍 현재 위치에서 {NEARBY_RADIUS_M}m 근처에 답사지가 없어요
+          </div>
+        ))}
+
       {/* 선택 날짜의 거리·시간 */}
       {activeRoute && (
         <div className="mb-3 flex gap-4 text-sm">
@@ -193,14 +278,11 @@ export default function RouteView({
 
       {/* 지도 */}
       <ProjectMap
-        stops={activeStops.map((s) => ({
-          siteId: s.siteId,
-          name: s.name,
-          latitude: s.latitude,
-          longitude: s.longitude,
-        }))}
+        stops={mapStops}
         routePath={activeRoute?.path ?? null}
         height="400px"
+        onLocate={setMyCoords}
+        myCoords={myCoords}
       />
 
       {activeRoute && (
